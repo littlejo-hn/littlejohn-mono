@@ -26,6 +26,7 @@ export const escrowAbi = parseAbi([
   'function withdraw(uint256 tokenId)',
   'function balanceOf(address owner) view returns (uint256)',
   'function ownerOf(uint256 tokenId) view returns (address)',
+  'function tokenOfOwnerByIndex(address owner, uint256 index) view returns (uint256)',
   'function balanceOfNFT(uint256 tokenId) view returns (uint256)',
   'function locked(uint256 tokenId) view returns (int128 amount, uint256 end)',
 ])
@@ -33,6 +34,26 @@ export const escrowAbi = parseAbi([
 export const voterAbi = parseAbi([
   'function vote(uint256 tokenId, address[] poolVote, uint256[] weights)',
   'function reset(uint256 tokenId)',
+  'function length() view returns (uint256)',
+  'function pools(uint256) view returns (address)',
+  'function gauges(address pool) view returns (address)',
+  'function isAlive(address gauge) view returns (bool)',
+])
+
+// Velodrome V1 Pair (LP token). metadata() returns reserves + token order in one call.
+export const pairAbi = parseAbi([
+  'function metadata() view returns (uint256 dec0, uint256 dec1, uint256 r0, uint256 r1, bool st, address t0, address t1)',
+  'function totalSupply() view returns (uint256)',
+  'function balanceOf(address) view returns (uint256)',
+  'function symbol() view returns (string)',
+])
+
+export const gaugeAbi = parseAbi([
+  'function deposit(uint256 amount, uint256 tokenId)',
+  'function withdraw(uint256 amount)',
+  'function getReward(address account, address[] tokens)',
+  'function earned(address token, address account) view returns (uint256)',
+  'function balanceOf(address) view returns (uint256)',
 ])
 
 // Our new HeistsDistributor.
