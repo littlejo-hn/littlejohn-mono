@@ -1,0 +1,16 @@
+# contracts is its own repo (preserves pristine-master diff-transparency); aerodrome is a reference clone
+contracts/
+aerodrome-reference/
+
+# SECRETS — never commit
+.env
+**/.env
+*.local
+
+# deps / build output
+node_modules/
+app/dist/
+**/*.b64
+
+# os
+.DS_Store
