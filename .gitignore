@@ -9,8 +9,10 @@ aerodrome-reference/
 
 # deps / build output
 node_modules/
-app/dist/
+dist/
 **/*.b64
 
 # os
 .DS_Store
+.dev.vars
+.wrangler/

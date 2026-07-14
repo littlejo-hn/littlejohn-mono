@@ -1,0 +1,13 @@
+name = "littlejohn-season0"
+pages_build_output_dir = "dist"
+compatibility_date = "2024-09-01"
+
+# D1 database (create with: wrangler d1 create littlejohn-season0, then paste the id)
+[[d1_databases]]
+binding = "DB"
+database_name = "littlejohn-season0"
+database_id = "PLACEHOLDER_SET_AFTER_d1_create"
+
+[vars]
+SEASON_BUDGET = "20000000"
+# ADMIN_KEY is a secret: wrangler pages secret put ADMIN_KEY
