@@ -22,7 +22,8 @@ _Name: **LittleJohn**, ticker **$JOHN** (settled 2026-07-11; $LJ rejected — $J
 
 Chain-specific work:
 - Stock-token pools: `balanceOf()` is fixed (multiplier pattern, not rebasing) so standard AMM math holds — but routers/UI must read `uiMultiplier()` for display, and gauges must handle multiplier-change events (splits) gracefully.
-- Day-one strategic pairs: ETH/USDG, JOHN/USDG, CASHCAT/ETH, NVDAx/USDG, TSLAx/USDG, USDG/USDe.
+- Day-one strategic pairs: ETH/USDG, JOHN/USDG, CASHCAT/ETH, NVDAx/USDG, TSLAx/USDG, **USDG/USDe** (the flagship stable pair).
+- **Stable-pair finding (on-chain, 2026-07-14):** only USDG (~$220M) and USDe (~$102M) are real, deep stables on the chain; USDC/USDT have NO canonical liquid deployment (all fakes/dust). So the stable pair is USDG/USDe, and Paxos (USDG) + Ethena (USDe) are both the pair partners AND the stable-BD targets — one play. Source USDG via Kraken's free 1:1 USDC↔USDG. Canonical: USDG `0x5fc5…`(6dp), USDe `0x5d3a…`(18dp).
 
 ## 2. Tokenomics
 

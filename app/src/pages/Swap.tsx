@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import { parseUnits, formatUnits, type Address } from 'viem'
+import { parseUnits, formatUnits } from 'viem'
 import { useWallet } from '../lib/wallet'
 import { deployment, coreLive } from '../config/contracts'
 import { erc20Abi, routerAbi } from '../abis'
+import { tokenList } from '../lib/tokens'
 import { DEFAULT_CHAIN } from '../lib/chains'
 import { fmtAmount } from '../lib/format'
-
-type Tok = { sym: string; addr: Address; dec: number }
 
 const DEADLINE_MIN = 20
 const SLIPPAGE_BPS = 50n // 0.5%
@@ -16,14 +15,7 @@ export function Swap() {
   const d = deployment(chainId ?? DEFAULT_CHAIN.id)
   const live = coreLive(d)
 
-  const tokens: Tok[] = useMemo(
-    () => (live ? [
-      { sym: 'JOHN', addr: d!.john, dec: 18 },
-      { sym: 'WETH', addr: d!.weth, dec: 18 },
-      { sym: 'USDG', addr: d!.usdg, dec: 6 },
-    ] : []),
-    [live, d],
-  )
+  const tokens = useMemo(() => (live ? tokenList(d!) : []), [live, d])
 
   const [fromI, setFromI] = useState(0)
   const [toI, setToI] = useState(1)
