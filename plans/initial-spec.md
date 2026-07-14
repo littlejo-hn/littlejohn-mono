@@ -47,7 +47,15 @@ What $ANSEM proved (July 2026): **continuous weekly airdrops funded by real fee 
   - **Onchain (70%)**: LP depth × time (majority weight), swap volume, veJOHN lock duration, referral-attributed volume (referral codes baked into router).
   - **Mindshare (30%)**: ⚠️ Kaito Yaps + open Yapper Leaderboards are DEAD (shut down 2026-01-15 after X revoked API access for pay-to-post apps) — automated X scoring is not buildable without the same API risk. Mechanism instead: (a) **submission-based content bounties** — creators submit links, scored by the KOL Council + team rubric (this is closer to how ANSEM actually works: manual weekly curation); (b) **Kaito Studio** structured campaign (their post-Yaps tier-based creator marketplace) as the paid amplification channel; (c) shift weight toward **onchain referral attribution** (codes in the router), which we fully control and can't be rugged by X policy.
 - Paid as veJOHN locked 1 year → recipients become voters earning fees/bribes immediately. Hard work converts to cash flow, not just a dump.
-- Season 0 starts **pre-TGE** (testnet quests + mindshare) to capture the current frenzy.
+
+**Season 0 mechanism (LOCKED 2026-07-14): non-custodial points campaign, NOT a pre-deposit vault.**
+Rejected the Blast/Sonic pre-deposit model — it runs on trust an anon solo founder doesn't have, makes us hold user funds (most dangerous contract, needs the audit we're deferring), and is the worst fact pattern for the SG/DTSP concern (custody + pre-token deposits). We get launch TVL from the LBP + POL + emissions flywheel instead. Season 0 = points, nobody deposits with us. Scored **off-chain** (pre-TGE; the on-chain snapshot adapter is for Season 1+), feeding the built Merkle pipeline:
+  - **Mindshare 40%** — curated X content, submission-based, council + team scored. Biggest weight: attention IS the pre-launch product.
+  - **Testnet quests 30%** — real actions on the testnet deployment (swap/LP/lock/vote/claim-test-Heist); measurable on-chain (testnet), depth-weighted for sybil resistance; doubles as product testing.
+  - **Referrals 20%** — codes; earn from referred wallets that actually complete quests, not sign-ups. Caps.
+  - **Proof of interest 10%** — no-custody signals: bridged to the chain, or LPing on *existing* pools we don't control (Morpho/Uniswap), plus follow/RT.
+  - Payout: locked veJOHN at TGE via the Heist claim. Min threshold to hit the leaderboard.
+  - Build: Season 0 portal (leaderboard + quest tracker + referral links + content submission) on a Cloudflare-native backend (Workers + D1/KV), output → `score.js`.
 
 **B. Weekly Creator Pool (evergreen, the direct ANSEM analog)**
 - 10% of protocol treasury revenue each epoch funds a Creator Pool.
@@ -98,7 +106,7 @@ Two failure modes from how MMF actually ended, both directly relevant:
 
 ### Stage gates (escape hatch — published as policy, settled 2026-07-11)
 
-1. **Gate 1, pre-TGE (~wk 5)**: < $500k *external* pre-deposit TVL in Heist Season 0 vaults → no token launch, wind down. Sunk cost: domains + minor infra + time; the $120k never deploys.
+1. **Gate 1, pre-TGE (~wk 5)**: Season 0 traction floor — e.g. < ~2,000 qualifying wallets AND weak mindshare/referral spread → no token launch, wind down. (Non-custodial campaign, so the metric is participation + attention, not deposited TVL.) Sunk cost: domains + minor infra + time; the $120k never deploys.
 2. **Gate 2, LBP**: raise under floor (set before LBP opens) → scale down or refund.
 3. **Gate 3, epoch 8**: external TVL + weekly fee thresholds (set at TGE) → miss = stop self-bribes, withdraw anchors, announced sunset (emissions off, LP exit window). Recoverable in fade case: POL + anchors minus IL (~$70–85k).
 
@@ -113,7 +121,7 @@ Publishing the gates is itself a trust signal: pre-committed honest-failure plan
 ## 5. Open questions (Yuxi)
 
 - [ ] Solo build or recruit? (Solidity + BD + a points/leaderboard web app — realistically 2–3 people minimum)
-- [x] Capital (settled 2026-07-11): ~US$120k liquidity budget — ~$60k JOHN/USDG POL, ~$30k anchor deposits in Season 0 pre-deposit vaults, ~$30k epoch 1–8 self-bribes (~$4k/wk). No formal audit pre-TGE (AI diff review + transparency page instead); consequence: stable-issuer BD (Paxos/Ethena have audit checkboxes) moves AFTER a post-LBP contest audit — GTM wedge inverts to memecoins-first → LBP → contest audit → stables.
+- [x] Capital (settled 2026-07-11): ~US$120k liquidity budget — ~$60k JOHN/USDG POL, ~$30k anchor deposits in day-1 pools (no pre-deposit vault — Season 0 is non-custodial), ~$30k epoch 1–8 self-bribes (~$4k/wk). No formal audit pre-TGE (AI diff review + transparency page instead); consequence: stable-issuer BD (Paxos/Ethena have audit checkboxes) moves AFTER a post-LBP contest audit — GTM wedge inverts to memecoins-first → LBP → contest audit → stables.
 - [ ] Counsel budget still unscoped.
 - [x] Name signed off: LittleJohn (2026-07-11). Still to do: pick $JOHN vs $LJ, register littlejo.hn (confirmed available 2026-07-11) + defensive littlejohn.xyz + X handle, trademark-registry check.
 - [x] License: Aerodrome/V2 core is BUSL-1.1 until 2027-01-01 (NOT forkable now — earlier "dual GPL/MIT" read was wrong, from a README summary). Pivoted to Velodrome V1 (MIT/GPL) — verified in-repo 2026-07-11.

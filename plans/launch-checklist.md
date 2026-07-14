@@ -32,7 +32,7 @@ Yuxi can do (accounts, keys, funds, legal). Ordered by what unblocks what.
 ## Phase 3 — Marketing ramp (~4–6 weeks, tease → Season 0 → TGE)
 - ⛔ Tease goes public (poster + one-line post) once X account exists
 - ⛔ Day-2 explainer thread; begin CT engagement (NOXA graduations, CASHCAT threads)
-- 🔨 **Season 0 pre-deposit + points portal** (decision: real pre-deposit vault contract, or off-chain signup + testnet/mindshare only?) — Season 0 is scored OFF-CHAIN (pre-TGE), so the snapshot adapter is for Season 1+
+- 🔨 **Season 0 portal** — LOCKED (2026-07-14) as a **non-custodial points campaign** (mindshare 40% / testnet quests 30% / referrals 20% / proof-of-interest 10%), NOT a pre-deposit vault. Build: leaderboard + quest tracker + referral links + content submission on a Cloudflare-native backend (Workers + D1/KV) → `score.js`. Scored off-chain; snapshot adapter is Season 1+.
 - ⛔ Recruit KOL council; scope Kaito Studio campaign
 - ⛔ BD (parallel): router/faucet integrations (FOMO, 1inch) = #1; then 2–3 mid-tier NOXA memecoins (gauge + veNFT); stables (Paxos/Ethena) after a contest audit; Arbitrum grant (Questbook Orbit domain)
 
