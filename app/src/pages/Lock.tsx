@@ -29,7 +29,7 @@ export function Lock() {
   const [locks, setLocks] = useState<LockRow[]>([])
   const [pools, setPools] = useState<Pool[]>([])
   const [voteLock, setVoteLock] = useState<string>('')
-  const [votePool, setVotePool] = useState<string>('')
+  const [weights, setWeights] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
@@ -96,16 +96,21 @@ export function Lock() {
     } catch (e) { setErr(txError(e)) } finally { setBusy(false) }
   }
 
+  const voteEntries = Object.entries(weights).filter(([, w]) => Number(w) > 0)
+  const totalWeight = voteEntries.reduce((s, [, w]) => s + Number(w), 0)
+
   const castVote = async () => {
-    if (!walletClient || !address || !voteLock || !votePool) return
+    if (!walletClient || !address || !voteLock || voteEntries.length === 0) return
     setBusy(true); setErr(null); setDone(null)
     try {
+      const poolsArg = voteEntries.map(([addr]) => addr as Address)
+      const weightsArg = voteEntries.map(([, w]) => BigInt(Math.floor(Number(w))))
       const hash = await walletClient.writeContract({
         address: d!.voter, abi: voterAbi, functionName: 'vote',
-        args: [BigInt(voteLock), [votePool as Address], [100n]], account: address, chain: null,
+        args: [BigInt(voteLock), poolsArg, weightsArg], account: address, chain: null,
       })
       await publicClient.waitForTransactionReceipt({ hash })
-      setDone('Vote cast. You earn this pool’s fees and tolls this epoch.')
+      setDone('Vote cast. You earn these pools’ fees and tolls this epoch.'); setWeights({})
     } catch (e) { setErr(txError(e)) } finally { setBusy(false) }
   }
 
@@ -182,18 +187,21 @@ export function Lock() {
                 </select>
               </div>
             </div>
-            <div className="field" style={{ marginTop: 8 }}>
-              <div className="row"><label>For pool (100%)</label>
-                <select className="tok" value={votePool} onChange={(e) => setVotePool(e.target.value)}>
-                  <option value="">Select pool</option>
-                  {pools.map((p) => <option key={p.addr} value={p.addr}>{p.symbol}</option>)}
-                </select>
+            <div className="sub" style={{ margin: '0.5rem 0 0.2rem' }}>Allocate weight across pools (relative):</div>
+            {pools.map((p) => (
+              <div className="kv" key={p.addr}>
+                <span className="k">{p.symbol}</span>
+                <span className="v">
+                  <input inputMode="numeric" placeholder="0" value={weights[p.addr] ?? ''}
+                    onChange={(e) => setWeights({ ...weights, [p.addr]: e.target.value.replace(/[^0-9]/g, '') })}
+                    style={{ width: 72, textAlign: 'right', background: 'var(--ground)', border: '1px solid var(--line)', borderRadius: 6, color: 'var(--ink)', fontFamily: 'var(--mono)', padding: '0.25rem 0.5rem' }} />
+                </span>
               </div>
-            </div>
-            <button className="btn" disabled={busy || !!switchMsg || !voteLock || !votePool} onClick={castVote}>
+            ))}
+            <div className="kv"><span className="k">Total weight</span><span className="v">{totalWeight}</span></div>
+            <button className="btn" disabled={busy || !!switchMsg || !voteLock || totalWeight === 0} onClick={castVote}>
               {switchMsg ?? (busy ? <><span className="spinner" /> Voting…</> : 'Cast vote')}
             </button>
-            <div className="sub" style={{ marginTop: '0.7rem' }}>Multi-pool weighted voting lands next; for now this votes 100% to one pool.</div>
           </>
         )}
         {done && <div className="ok">{done}</div>}
