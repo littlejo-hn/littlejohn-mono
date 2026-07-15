@@ -28,16 +28,31 @@ already BUILT. Their gap is exactly our strength.
   is days, not weeks). Push it now; don't let it gate the brand/content work, which needs no legal.
 - **Opsec basics** (hardware keys, clean funding). Cheap, fast, do them right.
 
-## Compressed sequence
+## ASAP sequence (competitor UP is compounding daily — target product-live in ~3–5 days)
+Two launches: **narrative** (zero-dependency, fire TODAY) and **product** (token/emissions, gated).
+
 | when | what | who |
 |---|---|---|
-| **Now** | X live, tease posted (littlejo.hn already up). Start the voice. Reply-guy on UP/CASHCAT/NOXA threads. | Yuxi |
-| **Now** | Fund testnet key → I broadcast → verify → capture demo screenshots/gifs for content | Yuxi→Claude |
-| **Day 1–2** | Day-2 explainer thread; open **Heist Season 0** (mindshare + testnet quests + referrals), 1 week | both |
-| **Day 1–7** | Hard KOL recruitment (the "boring UP" angle writes itself); memes; diff-transparency flex | Yuxi + council |
-| **Day 5–7** | Get POL capital on-chain (USDG via Kraken 1:1); mainnet deploy (hardware-key interim) | Yuxi→Claude |
-| **~Day 7–10** | Seed POL, create gauges, LBP for price discovery, **emissions ON** | both |
-| **~Day 10** | Season 0 snapshot → claim opens (locked veJOHN); milestone drops; flywheel live | Claude |
+| **TODAY** | Test eSIM → make @littlejohn → **post the tease + opening salvo**. Narrative launch has NO dependencies; start taking UP's undefended marketing lane now. | Yuxi |
+| **TODAY (parallel)** | Book SG legal consult (urgent); fund testnet key (free, 15m); start moving POL capital → USDG on-chain (the long pole) | Yuxi |
+| **Day 1** | I broadcast to testnet, verify end-to-end, capture demo gifs/screenshots for content | Claude |
+| **Day 1–3** | Open **Heist Season 0** (short + concurrent, not a long farm); KOL blitz; memes; "up is a spreadsheet" narrative | Yuxi + council |
+| **Day 2–4** | POL capital lands (USDG via Kraken 1:1); legal read back; mainnet deploy (hardware-key deployer, Safe transfer after) | Yuxi→Claude |
+| **Day 3–5** | Seed liquidity, gauges, **emissions ON**, dexscreener + farming-tracker listings (pull UP's mercenaries) | both |
+| **ongoing** | Season 0 runs concurrent; snapshot → claim at a checkpoint (locked veJOHN); milestone drops | Claude |
+
+## The two things that genuinely can't be skipped (compatible with ASAP = days, not weeks)
+1. **Testnet proof before mainnet.** ~1 day once the key is funded. It's real money on mainnet;
+   the contracts are a battle-tested fork but a live dry-run is the one technical gate I won't cut.
+2. **Legal read before the *irreversible* trigger** (token/emissions live). Runs in parallel, days
+   not weeks. Do EVERYTHING up to it (brand, testnet, deploy prep) now; pull the token trigger once
+   the DTSP read is back. Launching the token before knowing your legal risk is the one "ASAP" that
+   could actually hurt.
+
+## Real long-poles (what actually sets the date)
+- **POL capital on-chain** (bank → USDG → Robinhood Chain) — start moving it TODAY, it's the slow bit.
+- **Legal consult turnaround** — book TODAY.
+Everything else (brand, testnet, deploy, emissions) is fast. Narrative launch is instant.
 
 ## The one-line marketing wedge
 UP is the boring one. LittleJohn robs the boring — memeable brand, real lore, fees to the band,
