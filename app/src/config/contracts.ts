@@ -8,6 +8,7 @@ export type Deployment = {
   router: Address
   voter: Address
   heists: Address
+  launchpad: Address
   weth: Address
   usdg: Address
   usde: Address
@@ -23,6 +24,7 @@ export const DEPLOYMENTS: Record<number, Deployment> = {
     router: ZERO,
     voter: ZERO,
     heists: ZERO,
+    launchpad: ZERO,
     weth: '0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73',
     usdg: '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168',
     usde: '0x5d3a1Ff2b6BAb83b63cd9AD0787074081a52ef34',
@@ -33,6 +35,7 @@ export const DEPLOYMENTS: Record<number, Deployment> = {
     router: '0x139D245cBe54dC332BbAf6191269b81D727466a8',
     voter: '0x1340186d89767826f5C048BE90C3257297869702',
     heists: '0xFd8698a3a4c3197ea40D407e094AE26c53FddF98',
+    launchpad: '0xbABeA7f2e54dF349De3D743B9d55C33E6484cBD3',
     weth: '0xF13E5952780Cdcd2C17333129b5Bc5187ff07DC2',
     usdg: '0xc614ae754F338271fCDDb949037b8d3579D1dc35',
     usde: ZERO,
@@ -45,4 +48,8 @@ export function deployment(chainId: number): Deployment | undefined {
 
 export function coreLive(d: Deployment | undefined): d is Deployment {
   return !!d && d.heists !== ZERO && d.router !== ZERO
+}
+
+export function launchpadLive(d: Deployment | undefined): d is Deployment {
+  return !!d && d.launchpad !== ZERO && d.router !== ZERO
 }

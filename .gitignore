@@ -12,6 +12,12 @@ node_modules/
 dist/
 **/*.b64
 
+# foundry build output (launchpad) — never commit artifacts or lib/ gitlinks
+launchpad/out/
+launchpad/cache/
+launchpad/broadcast/
+launchpad/lib/
+
 # os
 .DS_Store
 .dev.vars

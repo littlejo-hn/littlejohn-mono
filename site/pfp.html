@@ -1,0 +1,46 @@
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; }
+  html, body { width: 400px; height: 400px; overflow: hidden; }
+  .tile {
+    width: 400px; height: 400px;
+    background:
+      radial-gradient(ellipse 70% 60% at 50% 34%, rgba(201,165,80,0.14), transparent 62%),
+      #0C1310;
+    display: grid; place-items: center;
+    position: relative;
+  }
+</style>
+<div class="tile">
+  <svg width="400" height="400" viewBox="0 0 400 400" fill="none">
+    <!-- toll bridge plank -->
+    <line x1="86" y1="300" x2="314" y2="300" stroke="#5E6B60" stroke-width="14" stroke-linecap="round"/>
+    <line x1="86" y1="300" x2="314" y2="300" stroke="#0C1310" stroke-width="3" stroke-dasharray="3 26" stroke-linecap="round"/>
+    <!-- hooded outlaw silhouette -->
+    <g fill="#C9A550">
+      <!-- hood + head -->
+      <path d="M200 96
+               c-33 0 -60 26 -60 60
+               c0 20 10 37 25 47
+               c-6 6 -10 14 -10 24
+               l0 6
+               c0 4 3 7 7 7
+               l76 0
+               c4 0 7 -3 7 -7
+               l0 -6
+               c0 -10 -4 -18 -10 -24
+               c15 -10 25 -27 25 -47
+               c0 -34 -27 -60 -60 -60 z"/>
+      <!-- face notch (negative space, reads as a hooded face) -->
+      <path d="M200 128
+               c-20 0 -36 16 -36 36
+               c0 16 10 29 24 34
+               l24 0
+               c14 -5 24 -18 24 -34
+               c0 -20 -16 -36 -36 -36 z" fill="#0C1310"/>
+    </g>
+    <!-- quarterstaff, planted diagonally, over the shoulder -->
+    <line x1="130" y1="330" x2="288" y2="150" stroke="#C9A550" stroke-width="15" stroke-linecap="round"/>
+    <line x1="130" y1="330" x2="288" y2="150" stroke="#0C1310" stroke-width="3.5" stroke-dasharray="3 30" stroke-linecap="round"/>
+  </svg>
+</div>

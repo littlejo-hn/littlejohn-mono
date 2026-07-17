@@ -3,7 +3,7 @@ import { ZERO, type Deployment } from '../config/contracts'
 
 export type Tok = { sym: string; addr: Address; dec: number }
 
-// Canonical tokens only. USDG is 6 decimals, USDe 18 — mismatches matter for pricing.
+// Canonical tokens only. USDG is 6 decimals, USDe 18; mismatches matter for pricing.
 // USDG/USDe is the flagship stable pair (real, deep stables on Robinhood Chain;
 // USDC/USDT have no canonical liquid deployment there). Zero addresses are dropped.
 export function tokenList(d: Deployment): Tok[] {

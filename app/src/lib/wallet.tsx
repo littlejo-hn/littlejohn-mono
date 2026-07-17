@@ -17,6 +17,7 @@ type WalletState = {
   isSupported: boolean
   hasWallet: boolean
   connect: () => Promise<void>
+  disconnect: () => void
   switchToDefault: () => Promise<void>
   walletClient: WalletClient | null
   publicClient: PublicClient
@@ -80,6 +81,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  // Injected wallets have no real disconnect; forget the connection locally.
+  const disconnect = useCallback(() => setAddress(null), [])
+
   const walletClient = useMemo<WalletClient | null>(() => {
     if (!window.ethereum || !chainId) return null
     const chain = CHAINS[chainId as SupportedChainId]
@@ -95,6 +99,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     isSupported: chainId != null && chainId in CHAINS,
     hasWallet,
     connect,
+    disconnect,
     switchToDefault,
     walletClient,
     publicClient,

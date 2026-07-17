@@ -1,0 +1,128 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LittleJohn · the outlaw launchpad of Robinhood Chain</title>
+<meta name="description" content="Launch coins on a fair curve. Every trade pays the take, and most of it goes back to the band. Winners graduate into the ve(3,3) DEX. Heist Season 0 is live. littlejo.hn">
+<style>
+  @font-face { font-family:'Archivo Black'; src:url(data:font/ttf;base64,__ARCHIVO_B64__) format('truetype'); font-weight:900; font-display:block; }
+  @font-face { font-family:'Instrument Serif'; src:url(data:font/ttf;base64,__INSTRUMENT_B64__) format('truetype'); font-style:italic; font-display:block; }
+  :root{
+    --bg:#070A08; --panel:#0C120D; --ink:#F4F1E6; --dim:#8B968C; --gold:#D4A94E; --gold-hot:#F0C868;
+    --line:rgba(244,241,230,.10); --green:#6FBF8B;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{background:var(--bg)}
+  body{
+    background:var(--bg); color:var(--ink); font-family:var(--mono); line-height:1.5;
+    overflow-x:hidden; -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1000px;margin:0 auto;padding:0 1.2rem}
+
+  /* ambient */
+  .glow{position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background:
+      radial-gradient(60% 45% at 50% 22%, rgba(212,169,78,.16), transparent 70%),
+      radial-gradient(80% 60% at 50% 108%, rgba(111,191,139,.06), transparent 60%);
+    animation:breathe 7s ease-in-out infinite;}
+  @keyframes breathe{0%,100%{opacity:.85}50%{opacity:1}}
+
+  /* nav */
+  nav{display:flex;align-items:center;justify-content:space-between;padding:1.4rem 0;font-size:.76rem;letter-spacing:.16em;text-transform:uppercase}
+  nav .brand{display:flex;align-items:center;gap:.55rem;font-weight:700;letter-spacing:.04em}
+  nav .brand b{width:.6em;height:.6em;background:var(--gold);display:inline-block;transform:rotate(45deg)}
+  nav .live{display:flex;align-items:center;gap:.45rem;color:var(--gold);border:1px solid rgba(212,169,78,.4);border-radius:999px;padding:.32rem .7rem}
+  nav .live i{width:.5em;height:.5em;border-radius:50%;background:var(--gold);animation:pulse 1.6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(212,169,78,.5)}50%{opacity:.5;box-shadow:0 0 0 6px rgba(212,169,78,0)}}
+
+  /* hero */
+  .hero{padding:clamp(3rem,11vh,7rem) 0 3rem}
+  .eyebrow{font-size:.78rem;letter-spacing:.34em;text-transform:uppercase;color:var(--dim);margin-bottom:1.6rem}
+  h1{font-family:'Archivo Black',system-ui,sans-serif;text-transform:uppercase;
+    font-size:clamp(3.2rem,12.5vw,9rem);line-height:.92;letter-spacing:-.02em;text-wrap:balance}
+  h1 .em{font-family:'Instrument Serif',Georgia,serif;font-style:italic;text-transform:none;color:var(--gold);letter-spacing:0;
+    text-shadow:0 0 42px rgba(212,169,78,.35)}
+  .lede{margin-top:1.6rem;max-width:54ch;color:var(--dim);font-size:clamp(.95rem,1.6vw,1.08rem);line-height:1.65}
+  .lede b{color:var(--ink);font-weight:500}
+  .cta{display:flex;gap:.7rem;flex-wrap:wrap;margin-top:2.1rem}
+  .btn{font-family:'Archivo Black',sans-serif;text-transform:uppercase;font-size:.9rem;letter-spacing:.04em;
+    background:var(--gold);color:#14120b;border:0;border-radius:11px;padding:.95rem 1.5rem;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:.5rem}
+  .btn:hover{background:var(--gold-hot);transform:translateY(-1px)}
+  .btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
+  .btn.ghost:hover{background:var(--panel)}
+
+  /* creed */
+  .creed{border-top:1px solid var(--line);padding:3.2rem 0}
+  .creed .kicker{font-size:.74rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:1.4rem}
+  .creed h2{font-family:'Archivo Black',sans-serif;text-transform:uppercase;font-size:clamp(1.6rem,4.4vw,2.7rem);line-height:1.06;letter-spacing:-.01em;max-width:20ch;text-wrap:balance}
+  .creed h2 .em{font-family:'Instrument Serif',serif;font-style:italic;text-transform:none;color:var(--gold)}
+  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-top:2rem}
+  .step{background:var(--panel);padding:1.4rem}
+  .step .n{font-family:'Instrument Serif',serif;font-style:italic;font-size:1.7rem;color:var(--gold)}
+  .step h3{font-family:'Archivo Black',sans-serif;text-transform:uppercase;font-size:1rem;letter-spacing:.02em;margin:.5rem 0 .4rem}
+  .step p{color:var(--dim);font-size:.86rem;line-height:1.6}
+
+  /* jab */
+  .jab{border-top:1px solid var(--line);padding:3rem 0}
+  .jab p{font-family:'Instrument Serif',serif;font-style:italic;font-size:clamp(1.3rem,3.4vw,2rem);line-height:1.35;max-width:26ch;color:var(--ink)}
+  .jab p .g{color:var(--gold)}
+  .jab .sub{font-family:var(--mono);font-style:normal;font-size:.9rem;color:var(--dim);margin-top:1rem;max-width:52ch}
+
+  footer{border-top:1px solid var(--line);padding:2rem 0 4rem;display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;font-size:.78rem}
+  footer .d{color:var(--gold);letter-spacing:.12em}
+  footer .w{color:#a98a5b}
+
+  .rise{opacity:0;transform:translateY(16px);animation:rise .9s cubic-bezier(.2,.7,.2,1) forwards}
+  .d1{animation-delay:.05s}.d2{animation-delay:.18s}.d3{animation-delay:.32s}.d4{animation-delay:.46s}.d5{animation-delay:.6s}
+  @keyframes rise{to{opacity:1;transform:none}}
+  @media(prefers-reduced-motion:reduce){.rise{animation:none;opacity:1;transform:none}.glow{animation:none}nav .live i{animation:none}}
+</style>
+
+<div class="glow"></div>
+<div class="wrap">
+  <nav class="rise d1">
+    <span class="brand"><b></b>LittleJohn</span>
+    <span class="live"><i></i>Heist Season 0 · live</span>
+  </nav>
+
+  <section class="hero">
+    <div class="eyebrow rise d1">The outlaw launchpad of Robinhood Chain</div>
+    <h1 class="rise d2">Launch the <span class="em">coin.</span><br>Feed the <span class="em">band.</span></h1>
+    <p class="lede rise d3">Launch a coin on a fair bonding curve. No presale, no team allocation, the whole supply trades. Every trade pays <b>the take</b>, and most of it goes straight back to <b>the band</b> as Bounties. Winners graduate into our ve(3,3) DEX. The other guys keep the fees. We give them back.</p>
+    <div class="cta rise d4">
+      <a class="btn" href="#">Join the Heist <span>🏹</span></a>
+      <a class="btn ghost" href="#creed">How it works</a>
+    </div>
+  </section>
+
+  <section class="creed" id="creed">
+    <div class="kicker rise">The code of the band</div>
+    <h2 class="rise">Other launchpads pocket the fees. We <span class="em">feed the band.</span></h2>
+    <div class="steps rise">
+      <div class="step"><div class="n">i.</div><h3>Launch</h3><p>Launch a coin on a fair bonding curve. No presale, no team allocation, the whole supply trades. Launching should feel free.</p></div>
+      <div class="step"><div class="n">ii.</div><h3>The take feeds the band</h3><p>Every trade pays the take. It's 1%, same as everyone. The difference is where it goes: most flows back to the band as Bounties, rewards for the work that grows the chain.</p></div>
+      <div class="step"><div class="n">iii.</div><h3>Graduate & govern</h3><p>Winners graduate into our ve(3,3) DEX. Lock $JOHN for veJOHN, vote, and collect the fees and tolls from the pools you back.</p></div>
+    </div>
+  </section>
+
+  <section class="creed" id="roadmap">
+    <div class="kicker rise">The plan</div>
+    <h2 class="rise">Four moves. <span class="em">No hard dates.</span> We ship when the audit clears.</h2>
+    <div class="steps rise">
+      <div class="step"><div class="n">I.</div><h3>Launchpad</h3><p>Launch coins on a fair curve. The take feeds the band as Bounties. Tokenless and live from day one, with real fees and no token needed.</p></div>
+      <div class="step"><div class="n">II.</div><h3>Fair launch</h3><p>$JOHN fair-launches on our own curve. No VC, no presale, just the same curve everyone else uses.</p></div>
+      <div class="step"><div class="n">III.</div><h3>The DEX</h3><p>JOHN graduates into the ve(3,3) DEX. Lock, vote, collect the tolls. Emissions on.</p></div>
+      <div class="step"><div class="n">IV.</div><h3>The flywheel</h3><p>Evergreen Bounties and seasonal Heists. Every trade feeds the band, forever.</p></div>
+    </div>
+  </section>
+
+  <section class="jab">
+    <p class="rise">This chain has launchpads. It has a liquidity <span class="g">"marketplace."</span> None of them have a band.</p>
+    <p class="sub rise">Faceless curves and a yield spreadsheet with a discord. We're the whole outlaw stack: launch, the take that feeds the band, and a DEX your winners graduate into. Real brand, real crew, rewards that lock you in as an owner instead of a mercenary.</p>
+  </section>
+
+  <footer class="rise">
+    <span class="d">littlejo.hn</span>
+    <span class="w">No token yet. Anyone selling you $JOHN is a highwayman.</span>
+  </footer>
+</div>

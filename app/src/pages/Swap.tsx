@@ -18,7 +18,7 @@ export function Swap() {
   const tokens = useMemo(() => (live ? tokenList(d!) : []), [live, d])
 
   const [fromI, setFromI] = useState(0)
-  const [toI, setToI] = useState(1)
+  const [toI, setToI] = useState(2)
   const [amountIn, setAmountIn] = useState('')
   const [amountOut, setAmountOut] = useState<bigint | null>(null)
   const [bal, setBal] = useState<bigint | null>(null)

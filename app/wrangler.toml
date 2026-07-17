@@ -1,0 +1,29 @@
+# Cloudflare Pages config for the littlejohn-app project. Its only job here is to
+# bind the SAME D1 database the indexer writes to, so the Pages Functions under
+# functions/api/* can read it as env.DB.
+#
+# Alternative: skip this file and add the binding in the dashboard instead
+# (Pages project -> Settings -> Functions -> D1 database bindings: DB -> littlejohn_index).
+
+name = "littlejohn-app"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-07-01"
+
+# Read APIs now source the Ponder indexer (functions/api/* -> env.PONDER_URL).
+[vars]
+PONDER_URL = "https://littlejohn-ponder.fly.dev/graphql"
+
+# D1: dedicated social DB (comments, profiles) read as env.DB. Separate from the
+# legacy indexer DB (that one degraded with D1 internal errors). Board/holders/
+# candles read Ponder, not this.
+[[d1_databases]]
+binding = "DB"
+database_name = "littlejohn_social"
+database_id = "f6d733d0-ed3d-4624-bd1f-45742d5279cd"
+
+# R2 for avatars/media (functions/api/upload + /api/media). Create the bucket in the
+# dashboard first (R2 -> Create bucket -> littlejohn-media). The deploy token can't
+# manage R2, but the runtime binding doesn't need that permission.
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "littlejohn-media"

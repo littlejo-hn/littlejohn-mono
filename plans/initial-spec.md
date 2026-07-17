@@ -38,6 +38,8 @@ Chain-specific work:
 | Protocol-owned liquidity | 10% | Seeds JOHN/USDG + ETH/USDG |
 | Public LBP | 5% | Price discovery + war chest |
 
+> **Reconciled to the launchpad-first pivot (2026-07-15):** this original table is superseded by the **community-max cap table** in `launchpad-tokenomics.md` §7 (recommended 45 Heists / 15 curve / 15 partner / 15 team / 10 treasury, tunable + to counsel). Two buckets changed: **Public LBP (5%) → the fair-launch curve tranche** (JOHN fair-launches on our own curve, `launchpad-tokenomics.md` §5b), and **POL (10%) → seeded from curve graduation** rather than a pre-mint bucket. The evergreen Creator Pool below is now the **Bounties** engine, funded by *the take* (the 1% launchpad fee), not just a treasury slice.
+
 ### The ANSEM-style layer: evergreen, effort-based airdrops
 
 What $ANSEM proved (July 2026): **continuous weekly airdrops funded by real fee flow, targeted at active promoters and holders, beats a one-shot drop** — it keeps the campaign permanently alive. Its weakness: random winner selection and no lockup, so mercenaries churn. We keep the evergreen cadence, fix the alignment:
@@ -74,17 +76,19 @@ Rejected the Blast/Sonic pre-deposit model — it runs on trust an anon solo fou
 
 Isolated per project rules (touches only JOHN + VotingEscrow, never pools). Genesis-lock reality: 30.5% in ve at TGE + 40% custodied lock-only + 29.5% liquid — honest, since earned-airdrop recipients are unknown at genesis (we don't fake Aerodrome's 90%, which came from airdropping to KNOWN veVELO holders).
 
-## 3. Go-to-market
+## 3. Go-to-market — launchpad-first roadmap
 
-Clock: Robinhood's 90-day gas-incentive campaign ends ~Oct 1. **Target TGE mid-August.**
+**Gating is audit-driven, not calendar-driven.** The launchpad custodies user funds, so its **audit is mandatory** (first call on the take) and it — not a target date — gates each irreversible step. Clock context only: Robinhood's 90-day gas-incentive campaign ends ~Oct 1; competitors (The Furnace, Ouroboros, NOXA, UP) compound daily, so pace matters, but we do not ship custody code on a deadline.
 
-| Phase | When | What |
+The DEX fork is done (byte-identical Velodrome V1, 58/58 green). The new heavy lift is the **launchpad** (Virtuals `fun` fork, MIT) + its audit.
+
+| Phase | Gate | What |
 |---|---|---|
-| 0. Fork & rename | Wk 1–2 (now→Jul 24) | Fork (byte-identical core: renames + params ONLY, zero logic changes; new contracts — points vault, Heists claims — isolated from pool funds), testnet deploy, stock-token multiplier at router/UI layer only, multi-pass AI diff review + public diff-transparency page (no formal audit pre-TGE — Yuxi's call 2026-07-11; Cantina/Sherlock contest post-LBP from proceeds) |
-| 1. BD | Wk 2–4 | **#1: router/faucet integrations** — get LittleJohn into FOMO's router (resolve best-exec vs hardcoded first), 1inch, Uniswap router, Robinhood app routing. This is the flow, everything else is depth waiting for flow. Then memecoins (no audit checkbox): 2–3 hungry mid-tier NOXA coins (#5–15, not CASHCAT) — gauge + matched emissions + partner veNFT. NOXA pitch = economics they can't get from Uniswap (partner veNFT fee share + matched emissions on graduated pools), valid at zero TVL. Stables BD (Paxos/Ethena) deferred until post-LBP contest audit |
-| 2. Season 0 | Wk 3–5 | Points site + content-submission portal live ("Heist Season 0"), testnet quests, recruit KOL Council (target CT accounts already farming the Robinhood meta), scope Kaito Studio campaign |
-| 3. TGE | Wk 5–6 (~Aug 15) | LBP → genesis gauges → first epoch. First Creator Pool payout same week |
-| 4. Flywheel | ongoing | Weekly epoch content cadence ("bribes live, APRs, top creators"), public dashboards, milestone drops |
+| **0. Build** | — | Launchpad fork (bonding curve → repointable graduation into the Velodrome-V1 fork; must support **launching a pre-deployed token** so JOHN can fair-launch on it — `launchpad-tokenomics.md` §5b). DEX fork already done. Public diff-transparency page. Testnet deploy of both. |
+| **I. Launchpad live (tokenless)** | launchpad audit passed | Ship the launchpad. **The take → the band as Bounties** (creator/referral/trader rewards); real hard-asset fees from day one, no token needed (the pump.fun-*business* phase). Seed the first launches; recruit KOL Council. Flow-routing is now *contained* — launchpad-native coins trade on our curve then graduate to our pool (see §4). Router/aggregator BD (FOMO/1inch/Robinhood app) narrows to the non-native strategic pairs (stables, stock tokens). |
+| **II. Heist Season 0 + JOHN fair-launch** | legal (DTSP) read back | Season 0 rewards Phase-I launchers/traders/creators with **locked veJOHN** → founding voter base. **JOHN fair-launches on our own curve** (community-max cap table, §7; no LBP, no presale). |
+| **III. Graduate to the DEX** | Season 0 filled | JOHN graduates the curve → JOHN/USDG ve(3,3) pool (POL from the raise) → **start the Minter**: emissions, veJOHN voting, tolls, and the take's locker-yield/buyback slice switch on. |
+| **IV. Flywheel** | ongoing | Evergreen **Bounties** + seasonal **Heists**, weekly epoch cadence (APRs, top creators, tolls live), public fee-vs-emissions dashboards, milestone drops. |
 
 ## 4. Risks
 
@@ -95,6 +99,7 @@ Clock: Robinhood's 90-day gas-incentive campaign ends ~Oct 1. **Target TGE mid-A
 - **Sybil/mercenary churn**: mitigated by locked-ve payouts, but expect farming; budget for scoring iteration.
 - **Death-spiral optics**: ve(3,3) emissions without fee growth = Solidly 2022. Publish fee-vs-emissions dashboard from day 1.
 - **Flow-routing dependency (CRITICAL, added 2026-07-12)**: LittleJohn is the pipes; the faucets already exist (FOMO — $75M-funded social trading app, integrated RH Chain; Robinhood's own app; NOXA). As of 2026-07-12 FOMO routes "the bulk" to **Uniswap V3/V4 + PancakeSwap V3, NOT any ve(3,3)**. Deep pools are worthless if the dominant faucets don't route to us. UNKNOWN TO RESOLVE: does FOMO route by best-execution (then emissions→depth wins flow automatically) or hardcoded venues (then we need an integration deal)? → **Router/aggregator listings (FOMO, 1inch, Uniswap router, Robinhood app) are now the #1 BD priority, above gauge deals.** Do NOT build a competing consumer faucet — unwinnable vs FOMO's war chest + Robinhood's app. Our own frontend = table-stakes swap/LP UI for our pools only.
+  - **REFRAMED existential → contained by launchpad-first (2026-07-15):** this risk was framed for a *pure-DEX* play. With the launchpad, native memecoins trade ONLY on our curve pre-graduation (captive by construction), then graduate into OUR ve(3,3) pool + UI (the pump.fun→PumpSwap flow-capture move). Residual leaks, both manageable: (1) non-native strategic pairs (USDG/USDe, ETH/USDG, stock tokens) still depend on external routing → router-integration BD shrinks to the stable/bluechip side only; (2) post-graduation a rival Uniswap pool could get deeper and aggregators route there → defense is graduation-seeded POL + our-UI default-venue advantage ("keep our pool deepest", not "we're invisible"). Net: no longer the #1 existential risk for launchpad-native flow.
 
 ### Strategic precedent — MM Finance vs VVS on Cronos (the brand-first thesis)
 
