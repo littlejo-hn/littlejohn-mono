@@ -9,6 +9,8 @@ aerodrome-reference/
 
 # deps / build output
 node_modules/
+# also catch symlinked node_modules (e.g. launchpad/harness -> app/node_modules)
+node_modules
 dist/
 **/*.b64
 

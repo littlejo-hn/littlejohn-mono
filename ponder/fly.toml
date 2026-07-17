@@ -1,0 +1,46 @@
+# Fly Machines config for the LittleJohn Ponder indexer (the single writer).
+# Secrets set out-of-band, never in this file:
+#   fly secrets set PONDER_RPC_URL="https://<alchemy>,https://rpc.mainnet.chain.robinhood.com"
+#   fly secrets set DATABASE_URL="postgresql://...neon..."
+# Pick primary_region to match the Neon Postgres region (< 50ms roundtrip).
+
+app = "littlejohn-ponder"
+primary_region = "iad" # TODO: set to the Neon primary's region
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  # Postgres schema Ponder writes into (required by `ponder start`). A fixed name
+  # is fine for a single instance; blue-green deploys would vary this per release.
+  DATABASE_SCHEMA = "ponder_testnet_v2"
+  PONDER_CHAIN_ID = "46630"
+  LAUNCHPAD_ADDRESS = "0xbABeA7f2e54dF349De3D743B9d55C33E6484cBD3"
+  LAUNCHPAD_START_BLOCK = "90397141"
+  WETH_ADDRESS = "0xF13E5952780Cdcd2C17333129b5Bc5187ff07DC2"
+  PONDER_POLLING_INTERVAL_MS = "1000"
+
+[http_service]
+  internal_port = 42069
+  force_https = true
+  # The writer must stay running; never auto-stop it.
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+  # Liveness on /health (200 while the process is alive) — NOT /ready, which
+  # returns 503 during backfill and would trigger a restart loop. Route API
+  # traffic on /ready separately once reader Machines exist.
+  [[http_service.checks]]
+    method = "GET"
+    path = "/health"
+    interval = "15s"
+    timeout = "5s"
+    grace_period = "30s"
+
+# Cheap testnet sizing. Bump to shared-cpu-2x / 2gb (or more) for mainnet, where
+# backfill volume and realtime load are far higher.
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"
