@@ -90,6 +90,29 @@ snipe-and-dump — a contract change / new audit surface."* This **is** that lev
 implemented as a decaying buy fee rather than a per-wallet cap (caps are proven
 useless; §1). Everything else in the locked spec stands.
 
+## 3b. Anti-spam — flat creation fee (reopens `creationFee = 0`)
+
+Gasless creation (see §5, the consumer-UX direction) needs a spam floor, because
+RH Chain gas (~1.5¢/create) is far too cheap to be one — spam is cheap here gasless
+or not. Charge a **flat ~$1 USDG to create**, routed to the take (the band).
+
+- **Negligible to humans** (1–5 coins = $1–5); **a wall at bot volume** — a
+  Noxa-scale flood (10k/day) ≈ $10k/day, paid in USDG up front.
+- **Routed to the band**, so it reads as a contribution, not extraction ("$1 to
+  launch, and it goes to the community pot").
+- **Reopens `fair-launch-spec.md`'s locked `creationFee = 0`** — justified because
+  that decision assumed gas was the anti-spam floor; on RH Chain there effectively
+  is none (~1.5¢).
+- **With identity:** layer per-creator escalation (1st free, rapid repeats pricier).
+  A refundable deposit (~$2–3, returned on a liveness bar) is the more-robust,
+  heavier alternative — held in reserve if spam actually appears.
+
+**Scope — what the fee does and doesn't protect.** It protects the **on-chain
+creation surface** (board / indexer / state bloat — the "bots creating tokens
+hourly" that overwhelmed Noxa). The read-side **frontend/RPC DDoS** that took
+Noxa's *site* down is a separate layer — Cloudflare edge + relayer rate-limits
+(§5). Two vectors, two defenses, both needed.
+
 ## 4. Track 2 — JOHN: no public sale, distribute + seed (LOCKED 2026-07-18)
 
 JOHN does **not** have a public sale — no curve, no auction. It's **distributed**
@@ -152,12 +175,21 @@ retro airdrop + POL (see §6); POL is seeded from the take war-chest, not a rais
   "Cloudflare issues"); that was half the death. Guarantee trading never hard-
   depends on our frontend/indexer (chain-read fallback, graceful WS degradation),
   and *market* the edge un-killability. This is task #18 territory.
+- **Consumer-UX / gasless (proposed, pending research).** To capture RH Chain's
+  mainstream (Robinhood-KYC'd) users: embedded wallets (email login, no seed
+  phrase) + a sponsored-gas relayer so users never touch a gas token — the
+  Hyperliquid "deposit once, act freely" feel, kept fully on-chain/self-custody.
+  Abuse control moves off gas onto: identity + the $1 creation fee (§3b) +
+  per-identity rate limits on the relayer *we* run (revocable gatekeeper) + the
+  on-chain buy fee (submission-agnostic, still bites). Open unknowns: RH Chain
+  AA/paymaster infra, and whether RH exposes account attestation usable as a
+  sybil gate. Research before committing; embedded wallets can prototype now.
 
 ## 6. Reconciliation with existing docs
 
 | Doc | Change |
 |---|---|
-| `fair-launch-spec.md` | **Extended.** Activates the deferred anti-snipe lever as a decaying buy fee (§3). Base 1% fee + curve params unchanged. |
+| `fair-launch-spec.md` | **Extended.** Decaying buy fee (§3) + a ~$1 creation fee reopening `creationFee = 0` (§3b). Base 1% trade fee + curve params unchanged. |
 | `launchpad-tokenomics.md §3` | **Reinforced.** The buy-fee premium is extra take → band; exactly the "volume-weighted in, community-weighted out" model. |
 | `launchpad-tokenomics.md §5b` | **Revised (2026-07-18).** No public sale: JOHN is distributed + protocol-seeded, not curve-sold or auctioned. Sequence stands; the 15% float bucket is repurposed. |
 | `launchpad-tokenomics.md §7` | **Revised.** The 15% "curve fair launch (public float)" bucket → retro airdrop (~10%, locked veJOHN) + POL (~5%). |
@@ -174,6 +206,10 @@ retro airdrop + POL (see §6); POL is seeded from the take war-chest, not a rais
    take (`tokenomics §8`). JOHN's launch adds ~none (no new sale contract).
 4. **Securities profile.** JOHN having no sale *softens* §8.3; the take-to-band
    share is the remaining item to counsel.
+5. **Anti-spam creation fee — proposed ~$1 USDG → the band (§3b).** Reopens
+   `creationFee = 0`; number tunable. Lock alongside the buy fee (task #20).
+6. **Consumer-UX / gasless (§5).** Research RH Chain AA/paymaster + account
+   attestation before building; embedded wallets can prototype independently.
 
 ## 8. Sources (2026-07 landscape sweep)
 
