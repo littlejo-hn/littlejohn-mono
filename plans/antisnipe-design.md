@@ -90,51 +90,57 @@ snipe-and-dump — a contract change / new audit surface."* This **is** that lev
 implemented as a decaying buy fee rather than a per-wallet cap (caps are proven
 useless; §1). Everything else in the locked spec stands.
 
-## 4. Track 2 — JOHN: deliberate genesis, not the memecoin curve
+## 4. Track 2 — JOHN: no public sale, distribute + seed (LOCKED 2026-07-18)
 
-**Why JOHN is different.** A snipe on a random memecoin is a bad chart. A snipe on
-JOHN is **governance capture** — whoever corners JOHN at t=0 corners veJOHN →
-emissions → the entire DEX. That makes JOHN's launch protection existential, and
-the memecoin curve (a first-come speed game, even with a buy fee) is the wrong
-tool for a governance asset where you want deliberate control of float,
-distribution, and initial liquidity depth.
+JOHN does **not** have a public sale — no curve, no auction. It's **distributed**
+(mostly as locked veJOHN) and its liquidity is **protocol-seeded**, then it trades
+on the open market. Locked with Yuxi 2026-07-18.
 
-**Precedent backs deliberate, not curve.** The best in *both* categories avoided
-curve-launching their own token: our own ve(3,3) lineage (Velodrome VELO,
-Aerodrome AERO) launched via **genesis distribution + airdrops to lockers**, and
-the launchpad category leader **pump.fun launched PUMP via a public sale, not its
-own curve**. (This corrects `launchpad-tokenomics.md §5b`, whose stated rationale
-— "it's pump.fun's own move" — is factually wrong.)
+**Why no sale is the strongest option:**
+- **Truest ve(3,3) precedent.** Velodrome (VELO) and Aerodrome (AERO) were
+  distributed + seeded, never publicly sold. This is what the lineage we forked
+  actually did.
+- **Softest securities profile.** The thing regulators care about is a *sale*. No
+  sale ≈ the §8.3 tension evaporates — directly answers the heaviest legal flag.
+- **No snipe surface, for free.** A curve starts at a cheap floor and rises; that
+  cheap tranche is exactly what snipers grab. Seeding the pool directly means
+  **we set the opening price** — there is no underpriced tranche to snipe. The
+  whole JOHN anti-snipe problem disappears without any special mechanism, and
+  governance capture was already off the table (the cap table is ~85% locked
+  veJOHN; a bought float can't out-vote it).
+- **Almost no new contracts.** Distribute via the existing veNFT/vesting
+  contracts → seed a standard ve(3,3) pool via the existing Router → gauge
+  (existing Voter) → Minter. Respects the "zero logic changes to core contracts"
+  hard rule. A sale (curve or auction) would have meant a new, audited sale
+  contract; this needs a distribution script + one seeding tx.
 
-**Recommended: Option B — uniform-price genesis auction.**
+**Sequence:**
+1. Phase 1 runs tokenless; the take accumulates a **USDG POL war-chest** (§3).
+2. Genesis: mint JOHN → distribute to band/partner/team/treasury (locked) +
+   **retro-airdrop to Phase-1 users/LPs/traders** as locked veJOHN.
+3. Treasury **seeds the JOHN/USDG ve(3,3) pool at a chosen fair price** with the
+   war-chest USDG + JOHN → that's the POL.
+4. Open trading → create the JOHN gauge → start the Minter → emissions + voting.
 
-1. **veJOHN airdrop** of the community bucket to *earned* participants (Heisters,
-   Phase-1 LPs/traders) as **locked veJOHN** — the community-max lever and the
-   founding voter base (`§7`: the 45% band bucket).
-2. **Uniform-price / commit-reveal auction** for the 15% public-float tranche:
-   one clearing price, pro-rata fill, so latency and sybils gain **nothing**
-   (the CCA idea — Uniswap shipped exactly this on RH Chain on 2026-07-13 — built
-   on our own contract so liquidity and narrative stay home).
-3. Proceeds + JOHN **seed the JOHN/USDG ve(3,3) pool** (our venue), which becomes
-   POL and gets the **first gauge** → start the Minter.
+The community gets JOHN two honest ways: **earn it** (airdrop, locked veJOHN) or
+**buy it at market** (no privileged cheap entry for anyone, snipers included).
 
-**Fallback: Option A — JOHN on the curve with maximal anti-snipe** (the Track-1
-buy fee tuned aggressive: higher start, longer window). Cheaper (reuses Track-1,
-no new auction contract) and preserves the "JOHN went through the same curve you
-did" solidarity narrative from §5b. Weaker because it's still a speed game at the
-margin for the one token where capture is fatal.
+**Considered and rejected (2026-07-17/18):**
+- *Public sale via bonding curve* (the old §5b) — keeps dogfooding + a launch
+  chart, but reintroduces the cheap-floor snipe surface and sharpens the
+  securities profile for no real need (POL is funded by the take, not a raise).
+  Its supporting premise — "pump.fun curve-launched its own token" — was false;
+  PUMP was a public sale.
+- *Public sale via uniform-price auction* — latency-proof, but auctions lost the
+  launchpad race (Gnosis dormant): no momentum/chart, can under-clear, and it's
+  launchpad-incoherent (an auction isn't our product either). Its one edge
+  (capture-resistance) is redundant with the locked cap table.
 
-**Recommendation:** Option B. The fairness/anti-capture gain outweighs the new
-audit surface for the one launch where it matters most, and the narrative is
-*stronger*, not weaker: **"JOHN wasn't sold to insiders and wasn't sniped on a
-curve — it was auctioned fairly and airdropped to the people who actually used the
-protocol."** Final lock is Yuxi's call (see open items).
-
-**What stays from `launchpad-tokenomics.md §5b/§7` under Option B:** the whole
-sequential model (JOHN=`Velo.sol` keeps its minter; genesis is a distribution
-event, emissions switch on after migration), the 45/15/15/15/10 allocation table,
-POL-from-graduation, Minter-dormant-until-Phase-2. **Only the mechanism for the
-15% public float changes: bonding curve → uniform-price auction.**
+**What stays from `launchpad-tokenomics.md §5b/§7`:** the sequential model
+(JOHN=`Velo.sol` keeps its minter; genesis is a distribution event; emissions
+begin after the pool is live) and the community-max, ~zero-insider-float cap
+table. **What changes:** the 15% public-float bucket is repurposed (no sale) →
+retro airdrop + POL (see §6); POL is seeded from the take war-chest, not a raise.
 
 ## 5. Supporting pillars (own tasks)
 
@@ -153,18 +159,21 @@ POL-from-graduation, Minter-dormant-until-Phase-2. **Only the mechanism for the
 |---|---|
 | `fair-launch-spec.md` | **Extended.** Activates the deferred anti-snipe lever as a decaying buy fee (§3). Base 1% fee + curve params unchanged. |
 | `launchpad-tokenomics.md §3` | **Reinforced.** The buy-fee premium is extra take → band; exactly the "volume-weighted in, community-weighted out" model. |
-| `launchpad-tokenomics.md §5b` | **Revised.** JOHN public float distributed via uniform-price auction, not the bonding curve. Corrects the "pump.fun curve-launched PUMP" premise. §7 allocation + sequence stand. |
-| North-star thesis (memory) | **Revised.** "JOHN fair-launches on its own curve → DEX" becomes "JOHN fair-launches via genesis auction → DEX." Update the memory once locked. |
+| `launchpad-tokenomics.md §5b` | **Revised (2026-07-18).** No public sale: JOHN is distributed + protocol-seeded, not curve-sold or auctioned. Sequence stands; the 15% float bucket is repurposed. |
+| `launchpad-tokenomics.md §7` | **Revised.** The 15% "curve fair launch (public float)" bucket → retro airdrop (~10%, locked veJOHN) + POL (~5%). |
+| North-star thesis (memory) | **Revised.** "JOHN fair-launches on its own curve" → "JOHN launches by distribution + protocol-seeded liquidity (no public sale)." |
 
 ## 7. Open items / to lock
 
-1. **JOHN: Option B (auction) vs Option A (curve + max anti-snipe).** Recommend B;
-   needs Yuxi's final lock before task #21 builds.
+1. **JOHN launch method — LOCKED (2026-07-18): no public sale, distribute + seed
+   (§4).** Remaining sub-decisions: the 15%-float repurpose split (proposed ~10%
+   retro airdrop / ~5% POL) and the initial seed price + POL depth (a Phase-2
+   execution param — set fair + deep).
 2. **Buy-fee params** (start %, window, decay shape) — model + lock in task #20.
-3. **Audit scope.** The buy fee and (if Option B) the genesis-auction contract are
-   both new audit surface, first call on the take (`tokenomics §8`).
-4. **Securities profile.** Routing sniper fees to the band sharpens the same
-   "share of protocol revenue" tension flagged in `tokenomics §8.3` — to counsel.
+3. **Audit scope.** The Track-1 buy fee is new audit surface, first call on the
+   take (`tokenomics §8`). JOHN's launch adds ~none (no new sale contract).
+4. **Securities profile.** JOHN having no sale *softens* §8.3; the take-to-band
+   share is the remaining item to counsel.
 
 ## 8. Sources (2026-07 landscape sweep)
 

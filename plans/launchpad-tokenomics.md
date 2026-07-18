@@ -101,29 +101,44 @@ Structure = a **floor** (house cut) + a **lottery ticket** (token slice): not ga
 
 JOHN's job in this loop: **decide which graduated memecoins deserve deep liquidity, and capture a cut of the whole economy's cashflow for doing so.** It is not needed to *use* the launchpad — it governs and monetizes the graduation economy.
 
-## 5b. How JOHN launches — fair launch on our own curve (2026-07-15)
+## 5b. How JOHN launches — no public sale, distribute + seed (revised 2026-07-18)
 
-JOHN does **not** launch via an LBP. It fair-launches on LittleJohn's own launchpad — the same curve every memecoin uses — then migrates to the DEX. On-brand ("no VC, no presale, JOHN went through the same curve you did") and it's pump.fun's own move (their token → PumpSwap as the graduation venue).
+JOHN does **not** launch via an LBP, a bonding curve, or an auction — it has **no
+public sale**. It's distributed (mostly as locked veJOHN) and its liquidity is
+**protocol-seeded**, then it trades on the open market. This is the true ve(3,3)
+precedent (VELO/AERO were distributed + seeded, never sold), the softest
+securities profile (no sale — see §8.3), and it needs almost no new contracts.
+(Supersedes the 2026-07-15 "fair launch on our own curve" call, which rested
+partly on the false premise that pump.fun curve-launched PUMP — PUMP was a public
+sale. Full rationale in `plans/antisnipe-design.md §4`.)
 
-**The reconciliation people trip on — "curve = fixed supply, but JOHN needs emissions":** these do not conflict, they're sequential.
-- pump.fun tokens are fixed-supply because *their token contract has no minter*. That's a property of the token, not of bonding curves.
-- JOHN's token is `Velo.sol` — a mintable ERC20 whose `minter` role is the Minter contract. Selling a batch of it on a curve doesn't remove the minter; the curve doesn't know or care.
-- So **the curve is a distribution event (it replaces the LBP), not a supply cap.** Emissions are a separate, later, additive stream from the Minter that switches on *after* migration. Fixed-on-the-curve and inflationary-after-migration are the same token at two points in time.
+**Why not the curve:** a curve starts at a cheap floor that snipers grab; seeding
+the pool directly lets us set a fair opening price with no tranche to snipe.
+Governance capture was never the real risk (the cap table is ~85% locked veJOHN;
+a bought float can't out-vote it), so the curve bought us nothing and cost us the
+snipe surface + a sharper legal profile.
 
-**The one launchpad requirement:** the standard Virtuals `fun` / pump.fun flow *mints a fresh fixed token* per launch. To launch JOHN this way the launchpad must support the other mode — **sell a pre-deployed token you hand it** (JOHN=`Velo.sol`, keeps its minter). A "launch your own token on a curve" feature; a modification to the mint-fresh path, not a large one.
+**The reconciliation people trip on — "no sale, but JOHN needs emissions":** these
+do not conflict, they're sequential.
+- JOHN's token is `Velo.sol` — a mintable ERC20 whose `minter` role is the Minter
+  contract. Distributing genesis JOHN and seeding a pool doesn't remove the minter.
+- So **genesis is a distribution event, not a supply cap.** Emissions are a
+  separate, later, additive stream from the Minter that switches on *after* the
+  pool is live. Fixed-at-genesis and inflationary-after are the same token at two
+  points in time.
 
 **Sequence:**
 1. Deploy the ve(3,3) system (JOHN=`Velo.sol`, VotingEscrow, Voter, Minter, gauges). **Minter dormant.**
-2. Mint genesis. The **public-float** tranche → a bonding-curve sale on our launchpad (the fair launch). Other buckets (Heists→locked veJOHN, partner veNFTs, team vest) mint to their existing locked/vesting contracts.
-3. Public buys JOHN on the curve → price discovery. No LBP, no presale.
-4. Curve fills → **graduates into the JOHN/USDG ve(3,3) pool** (our venue, not Uniswap); raised quote asset becomes POL.
+2. Mint genesis → distribute: band/partner/team → locked veJOHN / vesting; treasury → liquid; **retro-airdrop to Phase-1 launchpad users/LPs/traders** → locked veJOHN.
+3. Treasury **seeds the JOHN/USDG ve(3,3) pool at a chosen fair price** with the Phase-1 take **POL war-chest** (USDG) + a JOHN allocation → POL. No raise needed; POL is take-funded (§3).
+4. Open trading. The public gets JOHN by **earning it** (airdrop) or **buying at market** — no privileged cheap entry for anyone, snipers included.
 5. Create the JOHN gauge → **start the Minter** → emissions + veJOHN voting live.
 
-**Hybrid vs pure fair launch — leaning hybrid (see §7 table):** how much of the 500M genesis flows through the curve vs stays pre-allocated.
-- *Pure:* ~all supply curve-sold, buckets funded from emissions only. Maximal fairness/legal cleanliness, but launches with no bootstrapped voting base and no POL.
-- *Hybrid (recommended, §7):* the curve carries a **15% public-float tranche** (up from the old 5% LBP); Heists/partner/team keep their locked buckets; POL comes from graduation. Keeps the ve(3,3) day-one bootstrap while the public float is genuinely curve-discovered. Exact %s still tunable + to counsel.
+No "sell a pre-deployed token" launchpad feature is needed (that was a curve-launch
+requirement); distribution uses the existing veNFT/vesting contracts + one
+pool-seeding tx, respecting the "zero core-contract changes" rule.
 
-Note: JOHN launching on the launchpad depends on the launchpad (Virtuals `fun` fork) being built + **audited** first — consistent with launchpad-first phasing below.
+Note: JOHN still ships in Phase 2 and is not a launch blocker (§6).
 
 ## 6. Phasing (JOHN is not a launch blocker)
 
@@ -134,21 +149,24 @@ DEX pools work as plain AMM the entire time; JOHN emissions are a switch flipped
 
 ## 7. Genesis allocation — the community-max cap table (Hyperliquid template)
 
-The pivot changes two buckets from the original `initial-spec.md` §2 table:
-- **LBP (5%) → replaced by the fair-launch curve tranche** (§5b): the public float is now curve-discovered, not sold in an LBP.
-- **POL (10%) → seeded from curve graduation**, not a pre-mint bucket: the public's curve buys *become* the JOHN/USDG pool.
+With no public sale (§5b, revised 2026-07-18), the old public-float bucket is
+repurposed and POL is take-funded:
+- **LBP (5%) and the old curve public-float (15%) → gone.** No public sale.
+- **Retro airdrop (~10%) → Phase-1 launchpad users/LPs/traders** as locked veJOHN (grows the founding voter base; retro airdrops also drive attention).
+- **POL (~5% JOHN) + the Phase-1 take war-chest (USDG) → seed the JOHN/USDG pool** directly at genesis (§5b), not from a sale.
 
 Recommended 500M split (**proposed — tunable + to counsel**):
 
 | Bucket | % | Form |
 |---|---|---|
 | Heists / community (the band) | **45%** | locked veJOHN (1yr min) — rewards + voting base + eyeball engine |
-| Curve fair launch (public float) | **15%** | liquid — open price discovery; graduation → POL |
+| Retro airdrop (Phase-1 users) | **~10%** | locked veJOHN — rewards early adopters, expands the voter base |
 | Partner veNFTs | **15%** | 4y-locked — aligned voters, tolls, cross-protocol depth |
 | Team | **15%** | 70% max-locked veJOHN / 30% 2y vest, 6m cliff |
+| POL (protocol-owned liquidity) | **~5%** | seeded into the JOHN/USDG pool alongside take-war-chest USDG |
 | Treasury / ops / audit | **10%** | liquid — audit (mandatory), self-bribes, runway |
 
-Principle: **near-zero insider float, no VC (the superpower), earned/locked community as large as possible.** Emissions schedule unchanged; the take is a revenue layer on top, not a genesis bucket.
+Principle: **near-zero insider float, no VC (the superpower), earned/locked community as large as possible — and now zero public sale, so nobody buys in ahead of the band.** Emissions schedule unchanged; the take is a revenue layer on top, not a genesis bucket.
 
 ## 8. Risks / open items
 
