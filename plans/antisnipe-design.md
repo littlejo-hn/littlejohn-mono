@@ -175,15 +175,30 @@ retro airdrop + POL (see §6); POL is seeded from the take war-chest, not a rais
   "Cloudflare issues"); that was half the death. Guarantee trading never hard-
   depends on our frontend/indexer (chain-read fallback, graceful WS degradation),
   and *market* the edge un-killability. This is task #18 territory.
-- **Consumer-UX / gasless (proposed, pending research).** To capture RH Chain's
-  mainstream (Robinhood-KYC'd) users: embedded wallets (email login, no seed
-  phrase) + a sponsored-gas relayer so users never touch a gas token — the
-  Hyperliquid "deposit once, act freely" feel, kept fully on-chain/self-custody.
-  Abuse control moves off gas onto: identity + the $1 creation fee (§3b) +
-  per-identity rate limits on the relayer *we* run (revocable gatekeeper) + the
-  on-chain buy fee (submission-agnostic, still bites). Open unknowns: RH Chain
-  AA/paymaster infra, and whether RH exposes account attestation usable as a
-  sybil gate. Research before committing; embedded wallets can prototype now.
+- **Consumer-UX / gasless — researched 2026-07-18: GREEN on tech, no free sybil
+  gate.** ERC-4337 is first-class on RH Chain (EntryPoint v0.6/0.7/0.8; **Alchemy
+  Gas Manager** + **ZeroDev** paymasters; **Turnkey/Openfort** embedded wallets
+  confirmed live, **Privy** via custom-chain config; **EIP-7702** for existing
+  EOAs). So email-login self-custody wallets + dApp-sponsored gas are off-the-shelf
+  — **no relayer to build.** Gas token is ETH (we sponsor it; USDG-as-gas is
+  unconfirmed). **But RH exposes NO on-chain KYC/identity attestation** — the chain
+  is permissionless; KYC lives off-chain (withdrawals / stock tokens) + a sequencer
+  sanctions filter; there is no readable "verified human" signal and no dApp uses
+  one. So the hoped-for free sybil gate does not exist — abuse control stays
+  economic:
+  - **Spam creation is net-positive to defend:** the $1 fee (§3b) nets ~$0.985 vs
+    ~1.5¢ gas, so sponsoring creation gas *pays us* — not a griefing hole.
+  - **Real griefing vector = dust-trade gas-drain** (gas > the 1% fee on tiny
+    trades) → paymaster policy: sponsor only above a **min trade size** + **per-
+    account rate limits** (Alchemy Gas Manager supports this).
+  - **Proof-of-humanity** (World ID / Human Passport) is a *future* lever if spam
+    gets bad, not v1 — it adds friction and isn't free.
+  - **Corollary:** with no identity gate, all reward/airdrop distribution (incl. the
+    JOHN retro-airdrop, §4) must be **activity-weighted / costly-to-fake, never
+    per-wallet** — already the Heists model.
+  Net: the full magic UX (email login, no gas, no seed phrase) is shippable safely;
+  the defense is the $1 fee + paymaster policy + on-chain buy fee, not KYC.
+  (Chain-id note: mainnet = 4663, testnet = 46630.)
 
 ## 6. Reconciliation with existing docs
 
@@ -208,8 +223,10 @@ retro airdrop + POL (see §6); POL is seeded from the take war-chest, not a rais
    share is the remaining item to counsel.
 5. **Anti-spam creation fee — proposed ~$1 USDG → the band (§3b).** Reopens
    `creationFee = 0`; number tunable. Lock alongside the buy fee (task #20).
-6. **Consumer-UX / gasless (§5).** Research RH Chain AA/paymaster + account
-   attestation before building; embedded wallets can prototype independently.
+6. **Consumer-UX / gasless (§5) — research done (2026-07-18): tech GREEN
+   (4337 + Alchemy/ZeroDev + Turnkey/Openfort/Privy), no RH KYC gate.** Open:
+   prototype the embedded-wallet + sponsored-gas flow; set the paymaster policy
+   (min trade size + per-account rate limits); PoH deferred.
 
 ## 8. Sources (2026-07 landscape sweep)
 
