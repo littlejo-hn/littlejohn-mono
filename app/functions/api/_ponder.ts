@@ -32,6 +32,30 @@ export function json(body: unknown, status = 200): Response {
   })
 }
 
+// Edge-cache a public GET at the Cloudflare CDN so a read-flood hits cache, not
+// origin/Ponder — the infra vector that took Noxa's board offline. Each colo
+// caches independently after one miss, so origin sees ~1 req/colo/TTL instead of
+// one per client. `stale-while-revalidate` lets the edge keep serving the last
+// good response even while origin is slow or down (graceful degradation).
+export async function edgeCached(
+  request: Request,
+  waitUntil: (p: Promise<unknown>) => void,
+  ttl: number,
+  produce: () => Promise<Response>,
+): Promise<Response> {
+  if (request.method !== 'GET') return produce()
+  const cache = (caches as unknown as { default: Cache }).default
+  const key = new Request(new URL(request.url).toString(), { method: 'GET' })
+  const hit = await cache.match(key)
+  if (hit) return hit
+  const res = await produce()
+  if (res.status !== 200) return res
+  const cacheable = new Response(res.clone().body, res)
+  cacheable.headers.set('cache-control', `public, s-maxage=${ttl}, stale-while-revalidate=${ttl * 6}`)
+  waitUntil(cache.put(key, cacheable.clone()))
+  return cacheable
+}
+
 export async function ponderQuery<T = any>(env: Env, query: string): Promise<T> {
   const res = await fetch(env.PONDER_URL || DEFAULT_PONDER, {
     method: 'POST',
