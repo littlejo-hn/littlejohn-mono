@@ -199,6 +199,13 @@ contract LaunchpadTest is Fixture {
         assertGt(ethOut, 0);
     }
 
+    function test_AntiSnipe_RevertsIfPremiumPlusBaseExceeds100() public {
+        // premium + base must stay <= 100% or a buy's ethIn underflows.
+        // base = P_FEE + C_FEE = 130; 9871 + 130 = 10001 > BPS(10000).
+        vm.expectRevert(Launchpad.SnipeFeeTooHigh.selector);
+        pad.setConfig(feeRecipient, address(router), P_FEE, C_FEE, uint96(0), INIT_V_ETH, MIG_FEE, uint16(9871), uint32(120));
+    }
+
     function test_AntiSnipe_QuoteMatchesInWindow() public {
         _enableSnipe();
         address token = _create();

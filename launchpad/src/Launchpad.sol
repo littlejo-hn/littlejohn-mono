@@ -166,7 +166,9 @@ contract Launchpad is Initializable, UUPSUpgradeable, Ownable2StepUpgradeable {
         uint32 snipeWindow_
     ) external initializer {
         if (uint256(protocolFeeBps_) + creatorFeeBps_ > MAX_FEE_BPS) revert FeeTooHigh();
-        if (snipeStartBps_ > BPS) revert SnipeFeeTooHigh();
+        // Cap the launch-window premium so premium + base can never exceed 100%
+        // of the buy (else ethIn would underflow and brick the token's buys).
+        if (uint256(snipeStartBps_) + protocolFeeBps_ + creatorFeeBps_ > BPS) revert SnipeFeeTooHigh();
         if (dexRouter_ == address(0)) revert RouterRequired();
         __Ownable_init(owner_);
         __Ownable2Step_init();
@@ -412,7 +414,7 @@ contract Launchpad is Initializable, UUPSUpgradeable, Ownable2StepUpgradeable {
         uint32 snipeWindow_
     ) external onlyOwner {
         if (uint256(protocolFeeBps_) + creatorFeeBps_ > MAX_FEE_BPS) revert FeeTooHigh();
-        if (snipeStartBps_ > BPS) revert SnipeFeeTooHigh();
+        if (uint256(snipeStartBps_) + protocolFeeBps_ + creatorFeeBps_ > BPS) revert SnipeFeeTooHigh();
         if (dexRouter_ == address(0)) revert RouterRequired();
         feeRecipient = feeRecipient_;
         dexRouter = dexRouter_;
