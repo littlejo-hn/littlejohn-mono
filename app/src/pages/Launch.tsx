@@ -22,6 +22,16 @@ function fmtAge(ts?: number): string {
   return `${Math.floor(s / 86400)}d`
 }
 
+// Wash-resistant trending: rank by market-cap velocity (mcap per hour since
+// launch). mcap tracks the net curve position, which wash trading (a net-zero
+// buy+sell round-trip) can't move — unlike raw volume, which is trivially faked.
+// Dividing by age surfaces momentum (fast movers over stale ones). A future
+// pass can fold in unique-holder growth once the indexer exposes a holder count.
+function trendScore(mcap: number, createdTs?: number): number {
+  const ageH = Math.max(0, (Date.now() / 1000 - (createdTs ?? 0)) / 3600)
+  return (mcap || 0) / (ageH + 2)
+}
+
 type Feed = 'trending' | 'new' | 'mcap' | 'graduating' | 'graduated'
 const FEEDS: { id: Feed; label: string; Ico: typeof TrendUp }[] = [
   { id: 'trending', label: 'Trending', Ico: TrendUp },
@@ -132,11 +142,11 @@ export function Launch() {
       case 'mcap': return list.sort((a, b) => b.mcap - a.mcap)
       case 'graduating': return list.filter((t) => !t.graduated).sort((a, b) => (a.tokensSold > b.tokensSold ? -1 : 1))
       case 'graduated': return list.filter((t) => t.graduated).sort((a, b) => b.mcap - a.mcap)
-      default: return list.sort((a, b) => (b.volEth ?? 0) - (a.volEth ?? 0)) // trending
+      default: return list.sort((a, b) => trendScore(b.mcap, b.createdTs) - trendScore(a.mcap, a.createdTs)) // trending (wash-resistant)
     }
   }, [tokens, feed])
   const trending = useMemo(
-    () => [...tokens].sort((a, b) => (b.volEth ?? 0) - (a.volEth ?? 0) || b.mcap - a.mcap).slice(0, 5),
+    () => [...tokens].sort((a, b) => trendScore(b.mcap, b.createdTs) - trendScore(a.mcap, a.createdTs) || b.mcap - a.mcap).slice(0, 5),
     [tokens],
   )
 
