@@ -4,11 +4,18 @@ import { defineChain } from 'viem'
 // VITE_RPC_URL=http://127.0.0.1:8545 (see launchpad/harness). Unset in prod.
 const RPC_OVERRIDE = import.meta.env.VITE_RPC_URL as string | undefined
 
+// Optional comma-separated backup RPC endpoints for the read client's failover
+// (e.g. an Alchemy/QuickNode URL). Unset = single public RPC. Arm at mainnet
+// provisioning by setting VITE_RPC_FALLBACK to one or more distinct providers so
+// a single-RPC outage can't sink both the indexer path and its chain-read fallback.
+const RPC_FALLBACKS = ((import.meta.env.VITE_RPC_FALLBACK as string | undefined) ?? '')
+  .split(',').map((s) => s.trim()).filter(Boolean)
+
 export const robinhoodMainnet = defineChain({
   id: 4663,
   name: 'Robinhood Chain',
   nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-  rpcUrls: { default: { http: ['https://rpc.mainnet.chain.robinhood.com'] } },
+  rpcUrls: { default: { http: ['https://rpc.mainnet.chain.robinhood.com', ...RPC_FALLBACKS] } },
   blockExplorers: { default: { name: 'Blockscout', url: 'https://robinhoodchain.blockscout.com' } },
 })
 
@@ -16,7 +23,7 @@ export const robinhoodTestnet = defineChain({
   id: 46630,
   name: 'Robinhood Chain Testnet',
   nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-  rpcUrls: { default: { http: [RPC_OVERRIDE || 'https://rpc.testnet.chain.robinhood.com'] } },
+  rpcUrls: { default: { http: [RPC_OVERRIDE || 'https://rpc.testnet.chain.robinhood.com', ...(RPC_OVERRIDE ? [] : RPC_FALLBACKS)] } },
   blockExplorers: { default: { name: 'Blockscout', url: 'https://explorer.testnet.chain.robinhood.com' } },
   testnet: true,
 })

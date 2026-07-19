@@ -4,6 +4,7 @@ import {
   createWalletClient,
   custom,
   http,
+  fallback,
   type Address,
   type PublicClient,
   type WalletClient,
@@ -27,7 +28,13 @@ const WalletContext = createContext<WalletState | null>(null)
 
 function publicFor(chainId: number): PublicClient {
   const chain = CHAINS[chainId as SupportedChainId] ?? DEFAULT_CHAIN
-  return createPublicClient({ chain, transport: http() })
+  const urls = chain.rpcUrls.default.http
+  // Retry transient blips; fail over across providers when a backup RPC is armed
+  // (VITE_RPC_FALLBACK). This client backs both trading and the board's on-chain
+  // fallback, so a single-RPC outage must not sink it.
+  const opts = { retryCount: 3, timeout: 8_000 } as const
+  const transport = urls.length > 1 ? fallback(urls.map((u) => http(u, opts))) : http(urls[0], opts)
+  return createPublicClient({ chain, transport })
 }
 
 export function WalletProvider({ children }: { children: ReactNode }) {
