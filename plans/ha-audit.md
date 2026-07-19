@@ -13,6 +13,18 @@ outage vector; MED = degraded/needs arming; LOW = accepted/minor.
   the publicClient backs both trading AND the board's on-chain fallback; it used a
   single `http()` with no retry, so one RPC outage sank both paths. Now retry 3 +
   8s timeout, and `fallback()` across providers when `VITE_RPC_FALLBACK` is armed.
+- **Ponder read-layer failover** (`app/functions/api/_ponder.ts`) — `PONDER_URL`
+  accepts a comma-separated list (primary, warm-standby); `ponderQuery` tries each
+  in order with a 6s per-endpoint timeout. Arms the Ponder standby the moment it
+  exists. Endpoints are trusted config, never user input — no new attack surface.
+
+## Trading survives a total indexer + DB outage (verified 2026-07-19)
+Buying/selling never touches Ponder: the coin page loads via `loadToken` which
+falls through to `loadTokenOnChain` on any API failure, the chart falls back to
+`fetchTokenHistory` (chain), and quote+buy/sell are pure contract calls. So with
+**one RPC up**, a user can open any coin and trade even if Ponder + Neon are fully
+down — only the board/charts/discovery degrade. This is the "worst case, users can
+still buy" guarantee, satisfied by architecture.
 
 ## Component audit
 

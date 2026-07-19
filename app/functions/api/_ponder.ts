@@ -57,14 +57,32 @@ export async function edgeCached(
 }
 
 export async function ponderQuery<T = any>(env: Env, query: string): Promise<T> {
-  const res = await fetch(env.PONDER_URL || DEFAULT_PONDER, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ query }),
-  })
-  const j = (await res.json()) as { data?: T; errors?: unknown }
-  if (j.errors) throw new Error('ponder: ' + JSON.stringify(j.errors))
-  return j.data as T
+  // PONDER_URL may be a comma-separated list (primary, warm-standby, ...). Try
+  // each in order and fail over on network / HTTP / GraphQL error, so one indexer
+  // instance going down doesn't take the read API with it. A 6s per-endpoint
+  // timeout stops a hung primary from stalling the whole request. Endpoints are
+  // our own trusted infra from config — never user input — so failover adds no
+  // new attack surface (same trust boundary as a single endpoint).
+  const endpoints = (env.PONDER_URL || DEFAULT_PONDER).split(',').map((s) => s.trim()).filter(Boolean)
+  const body = JSON.stringify({ query })
+  let lastErr: unknown
+  for (const url of endpoints) {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body,
+        signal: AbortSignal.timeout(6000),
+      })
+      if (!res.ok) throw new Error(`ponder ${res.status}`)
+      const j = (await res.json()) as { data?: T; errors?: unknown }
+      if (j.errors) throw new Error('ponder: ' + JSON.stringify(j.errors))
+      return j.data as T
+    } catch (e) {
+      lastErr = e
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error('ponder: all endpoints failed')
 }
 
 // 1e18-scaled wei string -> float (ETH per whole token, or ETH amount).
