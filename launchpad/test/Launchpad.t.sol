@@ -85,7 +85,7 @@ abstract contract Fixture is Test {
         address padImpl = address(new Launchpad());
         bytes memory init = abi.encodeCall(
             Launchpad.initialize,
-            (owner, beacon, feeRecipient, address(router), P_FEE, C_FEE, uint96(0), INIT_V_ETH, MIG_FEE)
+            (owner, beacon, feeRecipient, address(router), P_FEE, C_FEE, uint96(0), INIT_V_ETH, MIG_FEE, uint16(0), uint32(0))
         );
         pad = Launchpad(payable(new ERC1967Proxy(padImpl, init)));
     }
@@ -143,6 +143,73 @@ contract LaunchpadTest is Fixture {
         assertEq(got, quoted);
     }
 
+    // ------------------------------------------------------- anti-snipe fee
+
+    // +79% buy premium at t0 (total ~80% with the 1% base), decaying over 120s.
+    function _enableSnipe() internal {
+        pad.setConfig(feeRecipient, address(router), P_FEE, C_FEE, uint96(0), INIT_V_ETH, MIG_FEE, uint16(7900), uint32(120));
+    }
+
+    function test_AntiSnipe_EarlyBuyTaxedToBand() public {
+        _enableSnipe();
+        address token = _create();
+        vm.deal(alice, 1 ether);
+        uint256 frBefore = feeRecipient.balance;
+        vm.prank(alice);
+        uint256 got = pad.buy{value: 1 ether}(token, 0);
+        // ~80% of the buy goes to the band (1% base protocol + 79% premium).
+        assertApproxEqAbs(feeRecipient.balance - frBefore, 0.8 ether, 1e12);
+        assertGt(got, 0);
+    }
+
+    function test_AntiSnipe_DecaysAndPatientBuyerWins() public {
+        _enableSnipe();
+        // Sniper buys at t0 on a fresh token.
+        address early = _create();
+        vm.deal(alice, 1 ether);
+        vm.prank(alice);
+        uint256 gotEarly = pad.buy{value: 1 ether}(early, 0);
+
+        // Patient buyer waits out the window on a fresh token.
+        address late = _create();
+        vm.warp(block.timestamp + 121);
+        vm.deal(alice, 1 ether);
+        uint256 frBefore = feeRecipient.balance;
+        vm.prank(alice);
+        uint256 gotLate = pad.buy{value: 1 ether}(late, 0);
+        // Only the 1% base protocol fee now — no premium.
+        assertApproxEqAbs(feeRecipient.balance - frBefore, 0.01 ether, 1e12);
+        // Same ETH, far more tokens than the sniper got.
+        assertGt(gotLate, gotEarly * 3);
+    }
+
+    function test_AntiSnipe_SellsNeverCarryPremium() public {
+        _enableSnipe();
+        address token = _create();
+        vm.deal(alice, 1 ether);
+        vm.prank(alice);
+        uint256 got = pad.buy{value: 1 ether}(token, 0); // taxed in-window buy
+        // Sell immediately, still inside the window: base fee only, no premium.
+        uint256 frBefore = feeRecipient.balance;
+        vm.startPrank(alice);
+        IERC20(token).approve(address(pad), got);
+        uint256 ethOut = pad.sell(token, got, 0);
+        vm.stopPrank();
+        assertLt(feeRecipient.balance - frBefore, 0.005 ether);
+        assertGt(ethOut, 0);
+    }
+
+    function test_AntiSnipe_QuoteMatchesInWindow() public {
+        _enableSnipe();
+        address token = _create();
+        vm.warp(block.timestamp + 60); // mid-decay
+        uint256 quoted = pad.quoteBuy(token, 1 ether);
+        vm.deal(alice, 1 ether);
+        vm.prank(alice);
+        uint256 got = pad.buy{value: 1 ether}(token, 0);
+        assertEq(got, quoted);
+    }
+
     function test_CreatorFeesAccrueAndClaim() public {
         address token = _create();
         vm.deal(alice, 5 ether);
@@ -162,7 +229,7 @@ contract LaunchpadTest is Fixture {
     function test_FeesSnapshottedPerCurve() public {
         address token = _create();
         // Owner cranks the default fees after the curve is live.
-        pad.setConfig(feeRecipient, address(router), 400, 100, uint96(0), INIT_V_ETH, MIG_FEE);
+        pad.setConfig(feeRecipient, address(router), 400, 100, uint96(0), INIT_V_ETH, MIG_FEE, uint16(0), uint32(0));
         // The live curve keeps its original economics.
         Launchpad.Curve memory c = pad.getCurve(token);
         assertEq(uint256(c.protocolFeeBps), P_FEE);
@@ -208,7 +275,7 @@ contract LaunchpadTest is Fixture {
         address padImpl = address(new Launchpad());
         bytes memory init = abi.encodeCall(
             Launchpad.initialize,
-            (owner, address(0xBEEF), feeRecipient, address(0), P_FEE, C_FEE, uint96(0), INIT_V_ETH, MIG_FEE)
+            (owner, address(0xBEEF), feeRecipient, address(0), P_FEE, C_FEE, uint96(0), INIT_V_ETH, MIG_FEE, uint16(0), uint32(0))
         );
         vm.expectRevert(Launchpad.RouterRequired.selector);
         new ERC1967Proxy(padImpl, init);

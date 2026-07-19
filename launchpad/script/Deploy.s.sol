@@ -30,6 +30,10 @@ contract Deploy is Script {
         uint16 protocolFeeBps = uint16(vm.envOr("PROTOCOL_FEE_BPS", uint256(60)));
         uint16 creatorFeeBps = uint16(vm.envOr("CREATOR_FEE_BPS", uint256(40)));
         uint96 creationFee = uint96(vm.envOr("CREATION_FEE_WEI", uint256(0)));
+        // Anti-snipe: +79% buy premium at t0 (total ~80% with the 1% base),
+        // decaying linearly to 0 over 120s. Owner-tunable via setConfig.
+        uint16 snipeStartBps = uint16(vm.envOr("SNIPE_START_BPS", uint256(7900)));
+        uint32 snipeWindow = uint32(vm.envOr("SNIPE_WINDOW_SECS", uint256(120)));
         uint128 initialVirtualEth = uint128(vm.envOr("INITIAL_VIRTUAL_ETH_WEI", uint256(1.35 ether)));
         uint128 migrationFee = uint128(vm.envOr("MIGRATION_FEE_WEI", uint256(0)));
 
@@ -40,7 +44,7 @@ contract Deploy is Script {
         address padImpl = address(new Launchpad());
         bytes memory init = abi.encodeCall(
             Launchpad.initialize,
-            (owner, beacon, feeRecipient, ljRouter, protocolFeeBps, creatorFeeBps, creationFee, initialVirtualEth, migrationFee)
+            (owner, beacon, feeRecipient, ljRouter, protocolFeeBps, creatorFeeBps, creationFee, initialVirtualEth, migrationFee, snipeStartBps, snipeWindow)
         );
         address pad = address(new ERC1967Proxy(padImpl, init));
 

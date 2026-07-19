@@ -50,6 +50,12 @@ contract Launchpad is Initializable, UUPSUpgradeable, Ownable2StepUpgradeable {
         // alter the economics of a launch that is already live.
         uint16 protocolFeeBps;
         uint16 creatorFeeBps;
+        // Anti-snipe launch fee, snapshotted per launch (same reasoning as the
+        // base fees): a buy-only premium that decays linearly to zero over
+        // `snipeWindow` seconds from `launchTime`, routed entirely to the band.
+        uint40 launchTime;
+        uint16 snipeStartBps;
+        uint32 snipeWindow;
     }
 
     /// @notice Beacon whose implementation backs every launched LaunchToken.
@@ -124,7 +130,9 @@ contract Launchpad is Initializable, UUPSUpgradeable, Ownable2StepUpgradeable {
         uint16 creatorFeeBps,
         uint96 creationFee,
         uint128 initialVirtualEth,
-        uint128 migrationFee
+        uint128 migrationFee,
+        uint16 snipeStartBps,
+        uint32 snipeWindow
     );
 
     // ---------------------------------------------------------------- errors
@@ -136,6 +144,7 @@ contract Launchpad is Initializable, UUPSUpgradeable, Ownable2StepUpgradeable {
     error SlippageExceeded();
     error InsufficientCreationFee();
     error FeeTooHigh();
+    error SnipeFeeTooHigh();
     error RouterRequired();
     error EthTransferFailed();
 
@@ -152,9 +161,12 @@ contract Launchpad is Initializable, UUPSUpgradeable, Ownable2StepUpgradeable {
         uint16 creatorFeeBps_,
         uint96 creationFee_,
         uint128 initialVirtualEth_,
-        uint128 migrationFee_
+        uint128 migrationFee_,
+        uint16 snipeStartBps_,
+        uint32 snipeWindow_
     ) external initializer {
         if (uint256(protocolFeeBps_) + creatorFeeBps_ > MAX_FEE_BPS) revert FeeTooHigh();
+        if (snipeStartBps_ > BPS) revert SnipeFeeTooHigh();
         if (dexRouter_ == address(0)) revert RouterRequired();
         __Ownable_init(owner_);
         __Ownable2Step_init();
@@ -168,6 +180,8 @@ contract Launchpad is Initializable, UUPSUpgradeable, Ownable2StepUpgradeable {
         creationFee = creationFee_;
         initialVirtualEth = initialVirtualEth_;
         migrationFee = migrationFee_;
+        snipeStartBps = snipeStartBps_;
+        snipeWindow = snipeWindow_;
     }
 
     /// @notice Accepts the ETH-dust refund the Router sends back after a
@@ -201,7 +215,10 @@ contract Launchpad is Initializable, UUPSUpgradeable, Ownable2StepUpgradeable {
             graduated: false,
             creator: msg.sender,
             protocolFeeBps: protocolFeeBps,
-            creatorFeeBps: creatorFeeBps
+            creatorFeeBps: creatorFeeBps,
+            launchTime: uint40(block.timestamp),
+            snipeStartBps: snipeStartBps,
+            snipeWindow: snipeWindow
         });
         allTokens.push(token);
 
@@ -255,7 +272,9 @@ contract Launchpad is Initializable, UUPSUpgradeable, Ownable2StepUpgradeable {
         Curve storage c = _activeCurve(token);
         if (ethSent == 0) revert ZeroAmount();
 
+        uint256 pBps = _snipePremiumBps(c);
         (uint256 protocolFee, uint256 creatorFee) = _splitFee(ethSent, c.protocolFeeBps, c.creatorFeeBps);
+        protocolFee += _ceilDiv(ethSent * pBps, BPS); // anti-snipe premium, routed to the band
         uint256 ethIn = ethSent - protocolFee - creatorFee;
 
         uint256 k = uint256(c.virtualEth) * c.virtualToken;
@@ -269,6 +288,7 @@ contract Launchpad is Initializable, UUPSUpgradeable, Ownable2StepUpgradeable {
             tokensOut = remaining;
             uint256 ethNeeded = _ceilDiv(k, uint256(c.virtualToken) - remaining) - c.virtualEth;
             (protocolFee, creatorFee) = _splitFee(ethNeeded, c.protocolFeeBps, c.creatorFeeBps);
+            protocolFee += _ceilDiv(ethNeeded * pBps, BPS); // premium on the ETH actually spent
             uint256 charged = ethNeeded + protocolFee + creatorFee;
             if (charged > ethSent) {
                 // Ceil rounding can push the recomputed charge a wei past what
@@ -360,6 +380,7 @@ contract Launchpad is Initializable, UUPSUpgradeable, Ownable2StepUpgradeable {
         Curve storage c = curves[token];
         if (c.creator == address(0)) revert UnknownToken();
         (uint256 protocolFee, uint256 creatorFee) = _splitFee(ethAmount, c.protocolFeeBps, c.creatorFeeBps);
+        protocolFee += _ceilDiv(ethAmount * _snipePremiumBps(c), BPS); // quote must match the buy premium
         uint256 ethIn = ethAmount - protocolFee - creatorFee;
         uint256 k = uint256(c.virtualEth) * c.virtualToken;
         tokensOut = uint256(c.virtualToken) - _ceilDiv(k, uint256(c.virtualEth) + ethIn);
@@ -386,9 +407,12 @@ contract Launchpad is Initializable, UUPSUpgradeable, Ownable2StepUpgradeable {
         uint16 creatorFeeBps_,
         uint96 creationFee_,
         uint128 initialVirtualEth_,
-        uint128 migrationFee_
+        uint128 migrationFee_,
+        uint16 snipeStartBps_,
+        uint32 snipeWindow_
     ) external onlyOwner {
         if (uint256(protocolFeeBps_) + creatorFeeBps_ > MAX_FEE_BPS) revert FeeTooHigh();
+        if (snipeStartBps_ > BPS) revert SnipeFeeTooHigh();
         if (dexRouter_ == address(0)) revert RouterRequired();
         feeRecipient = feeRecipient_;
         dexRouter = dexRouter_;
@@ -397,7 +421,9 @@ contract Launchpad is Initializable, UUPSUpgradeable, Ownable2StepUpgradeable {
         creationFee = creationFee_;
         initialVirtualEth = initialVirtualEth_;
         migrationFee = migrationFee_;
-        emit ConfigUpdated(feeRecipient_, dexRouter_, protocolFeeBps_, creatorFeeBps_, creationFee_, initialVirtualEth_, migrationFee_);
+        snipeStartBps = snipeStartBps_;
+        snipeWindow = snipeWindow_;
+        emit ConfigUpdated(feeRecipient_, dexRouter_, protocolFeeBps_, creatorFeeBps_, creationFee_, initialVirtualEth_, migrationFee_, snipeStartBps_, snipeWindow_);
     }
 
     function _authorizeUpgrade(address) internal override onlyOwner {}
@@ -429,6 +455,28 @@ contract Launchpad is Initializable, UUPSUpgradeable, Ownable2StepUpgradeable {
         creatorFee = _ceilDiv(base * cBps, BPS);
     }
 
-    /// @dev Reserved storage for future upgrades.
-    uint256[40] private __gap;
+    /// @dev Anti-snipe premium (bps) for a buy on `c` right now: `snipeStartBps`
+    ///      at launch, decaying linearly to 0 across `snipeWindow` seconds, then
+    ///      zero forever. Charged on buys only and routed to the band. Snapshotted
+    ///      per launch, so an owner config change never touches a live launch.
+    function _snipePremiumBps(Curve storage c) internal view returns (uint256) {
+        uint256 window = c.snipeWindow;
+        if (window == 0 || c.snipeStartBps == 0) return 0;
+        uint256 elapsed = block.timestamp - c.launchTime;
+        if (elapsed >= window) return 0;
+        return (uint256(c.snipeStartBps) * (window - elapsed)) / window;
+    }
+
+    /// @notice Anti-snipe buy premium (bps) at a launch's first second, decaying
+    ///         linearly to 0 over `snipeWindow`. Charged on buys only, routed to
+    ///         the band. Deliberately outside MAX_FEE_BPS (that caps the standing
+    ///         fee; this is a launch-window anti-snipe mechanism). Appended here
+    ///         (consuming a gap slot) to keep the storage layout upgrade-safe.
+    uint16 public snipeStartBps;
+    /// @notice Anti-snipe decay window (seconds) measured from token creation.
+    uint32 public snipeWindow;
+
+    /// @dev Reserved storage for future upgrades (one slot consumed by the
+    ///      anti-snipe params above, which pack into a single slot).
+    uint256[39] private __gap;
 }
