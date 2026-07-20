@@ -88,6 +88,65 @@ Heists scorer (on-chain bounty measurement) · Season-0 points portal (the point
 ledger) · the indexer · the take/fee-split from the launchpad · the movement (rug
 crusade) as the pre-fee top-of-funnel.
 
+## Mechanic scan (2026-07-20) — what to pay, validated against 2025-26 proof
+
+**The one design principle, confirmed by the scan:** *pay rewards in **locked veJOHN
+(ownership)**, never cash.* Every 2025-26 mechanic that BUILT a durable tribe pays
+ownership; every one that FAILED pays cash to people with no reason to stay. That
+single filter separates the whole landscape.
+
+### Reward-types to build (ranked, all paid in / boosted by locked veJOHN)
+1. **ve(3,3) vote-incentives / bribes — the SPINE, not an add-on.** Graduated tokens
+   must court veJOHN voters for liquidity, so **launching projects pay the band
+   (bribes) to steer emissions to their pool** — a *second* value source on top of
+   the take, funded by projects, not by you. Proof: Aerodrome ~$1.3B TVL, ~60% of all
+   Base DEX volume; Curve bribes ran 20–50%+ APY and became the main reason to hold.
+   Guard the known failure mode: if bribe income dwarfs real fees, voters optimize for
+   bribes over health — weight real fees generously, vet which pools get gauges.
+2. **Give-back as buyback → distribute to lockers (real yield), NOT burn.** Route the
+   band's share of the take to buy JOHN and *distribute to veJOHN lockers.* Proof:
+   Hyperliquid bought $2B+ HYPE with ~97% of fees (the backbone of its cult). Burn is
+   a price crutch that rewards passive holders — pump.fun burned $370M/36% of supply,
+   price didn't hold, and they *abandoned* 100%-burn (Apr 2026). Distribute-to-owners
+   beats burn for our model.
+3. **Points → locked-veJOHN airdrop, usage/holding-weighted, sybil-gated.** Proof of
+   good: Hyperliquid $1.6B to ~94K real wallets, no VC → deepest cult in perps. Proof
+   of bad: LayerZero purged ~800K sybils; friend.tech's token drop didn't save it.
+   **Never pay points for raw volume** (that's what farmers game) — weight to
+   locking + real fees generated.
+4. **Creator/KOL rev-share + a veJOHN boost.** Table-stakes to compete (pump.fun
+   creators earned $350M; PumpSwap/Believe share ~50%). Ship default cash share **+ a
+   materially higher rate if the creator vests it into veJOHN** → converts mercenary
+   launchers into owners.
+5. **Lock multipliers / vote-escrow boosts** — longer lock = bigger reward (Curve up
+   to 2.5×). Native to ve(3,3); use everywhere to make veJOHN sticky.
+6. **Referrals — ship ONLY paid in locked veJOHN.** Cheap + viral (Axiom 30%, GMGN),
+   but mercenary by default (referrers dump users and leave). Paid in *locked veJOHN*
+   it recruits owners who recruit owners. Cash referrals = churn; ship the veJOHN form.
+
+### Do NOT build (mercenary cash gimmicks — the FAIL list)
+- **Cash loss-rebates / cashback** — adverse selection (you'd mint rewards for the
+  churn-prone ~63% who lose). See below for the one salvageable variant.
+- **Streaks / daily quests as a primary driver** — friend.tech corpse: −95% txns in
+  weeks once novelty wore off.
+- **Copy-trade fee splits *as a growth mechanic*** — fine as a product feature,
+  mercenary as growth (copiers chase the next wallet).
+- **Lottery / jackpot memecoins** — gambling loops, off-brand for "protect the little
+  guy" (that's SLVR — froth that dies at the cliff).
+- **Buyback-and-BURN** — see #2; distribute-to-lockers beats it.
+- **Reply-to-launch virality as retention** — Believe spiked then −94%; it's an
+  acquisition tactic, not a moat.
+
+### The loss-refund (Variational), honestly
+Variational's loss-refund only works because **Omni is the counterparty** — it hands
+back ~3% of *its own spread winnings* as a capped lottery. A launchpad isn't the
+counterparty, so a cash version would **tax winners + the band to pay the losing
+cohort** — it FAILS the filter. The *only* defensible port is a **hard-capped,
+veJOHN-denominated "loss shield" lottery** ("get rekt? the band has your back — some
+comes back, as ownership"). It's on-brand and turns bad luck into an ownership
+on-ramp, but it's **second-tier** (still rewards losing) — cap it hard, never lead
+with it.
+
 ## Honest risks
 1. **Bootstrap leans on the token-promise** (farmers) before fees exist → locked
    airdrop + real-growth weighting mitigate, don't eliminate.
@@ -96,3 +155,5 @@ crusade) as the pre-fee top-of-funnel.
    movement break the circle, but it's still a bet that growth compounds before
    patience/runway runs out.
 4. **Securities** — paying fee-share/rewards sharpens the §8.3 profile → to counsel.
+5. **ve(3,3) bribe-capture** — if project bribes dwarf real fees, governance rots
+   (voters chase bribes over protocol health). Weight real fees; gate gauges.
