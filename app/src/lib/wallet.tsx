@@ -20,6 +20,7 @@ type WalletState = {
   connect: () => Promise<void>
   disconnect: () => void
   switchToDefault: () => Promise<void>
+  switchTo: (chainId: number) => Promise<void>
   walletClient: WalletClient | null
   publicClient: PublicClient
 }
@@ -69,9 +70,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     await refresh()
   }, [refresh])
 
-  const switchToDefault = useCallback(async () => {
+  const switchTo = useCallback(async (id: number) => {
     if (!window.ethereum) return
-    const hexId = numberToHex(DEFAULT_CHAIN.id)
+    const chain = CHAINS[id as SupportedChainId] ?? DEFAULT_CHAIN
+    const hexId = numberToHex(chain.id)
     try {
       await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: hexId }] })
     } catch {
@@ -79,14 +81,15 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         method: 'wallet_addEthereumChain',
         params: [{
           chainId: hexId,
-          chainName: DEFAULT_CHAIN.name,
-          nativeCurrency: DEFAULT_CHAIN.nativeCurrency,
-          rpcUrls: DEFAULT_CHAIN.rpcUrls.default.http,
-          blockExplorerUrls: [DEFAULT_CHAIN.blockExplorers!.default.url],
+          chainName: chain.name,
+          nativeCurrency: chain.nativeCurrency,
+          rpcUrls: chain.rpcUrls.default.http,
+          blockExplorerUrls: [chain.blockExplorers!.default.url],
         }],
       })
     }
   }, [])
+  const switchToDefault = useCallback(() => switchTo(DEFAULT_CHAIN.id), [switchTo])
 
   // Injected wallets have no real disconnect; forget the connection locally.
   const disconnect = useCallback(() => setAddress(null), [])
@@ -108,6 +111,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     connect,
     disconnect,
     switchToDefault,
+    switchTo,
     walletClient,
     publicClient,
   }

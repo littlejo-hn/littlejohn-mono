@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { TrendUp, Sparkle, Rocket, ChartLineUp } from '@phosphor-icons/react'
 import { Avatar } from '../components/Avatar'
+import { TokenDrawer } from '../components/TokenDrawer'
 
 // The RH-Chain-native terminal. Chain-wide across every pad/DEX (via /api/trenches,
 // composed from GeckoTerminal), ranked wash-resistant. GMGN doesn't have RH as a
@@ -59,6 +60,7 @@ export function Trenches() {
   const [coins, setCoins] = useState<Coin[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
+  const [sel, setSel] = useState<Coin | null>(null)
 
   const load = useCallback(async (f: Feed) => {
     setLoading(true); setErr(null)
@@ -118,12 +120,13 @@ export function Trenches() {
         {!loading && !err && coins.length === 0 && <div className="term-empty">Nothing here yet.</div>}
 
         {coins.map((c, i) => (
-          <a
+          <div
             key={c.pool || c.address}
             className="term-row term-coin"
-            href={`https://dexscreener.com/robinhood/${c.pool}`}
-            target="_blank"
-            rel="noopener noreferrer"
+            role="button"
+            tabIndex={0}
+            onClick={() => setSel(c)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSel(c) } }}
           >
             <span className="tc-rank">{i + 1}</span>
             <span className="tc-tok">
@@ -141,10 +144,11 @@ export function Trenches() {
             <span className={`tc-num num ${c.liqUsd < 2000 ? 'warn' : ''}`}>{usd(c.liqUsd)}</span>
             <span className="tc-num num tc-flow"><b className="up">{c.buys24}</b>/<b className="down">{c.sells24}</b></span>
             <span className="tc-num num tc-age">{age(c.createdTs)}</span>
-          </a>
+          </div>
         ))}
       </div>
       <div className="term-foot">Data via GeckoTerminal · trending ranked by unique buyers, not raw volume · not financial advice</div>
+      <TokenDrawer coin={sel} onClose={() => setSel(null)} />
     </div>
   )
 }

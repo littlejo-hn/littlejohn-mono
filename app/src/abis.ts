@@ -22,6 +22,17 @@ export const routerAbi = parseAbi([
   'function removeLiquidity(address tokenA, address tokenB, bool stable, uint256 liquidity, uint256 amountAMin, uint256 amountBMin, address to, uint256 deadline) returns (uint256 amountA, uint256 amountB)',
 ])
 
+// Uniswap V2 Router02 (Robinhood) — the chain's dominant DEX, used by the terminal
+// to trade chain-wide trenches tokens (NOT our venue). `path` is a plain address[],
+// unlike our Velodrome routerAbi above (route structs). Fee-on-transfer variants are
+// used for execution so taxed memecoins don't revert; getAmountsOut is quote-only.
+export const uniV2RouterAbi = parseAbi([
+  'function WETH() view returns (address)',
+  'function getAmountsOut(uint256 amountIn, address[] path) view returns (uint256[] amounts)',
+  'function swapExactETHForTokensSupportingFeeOnTransferTokens(uint256 amountOutMin, address[] path, address to, uint256 deadline) payable',
+  'function swapExactTokensForETHSupportingFeeOnTransferTokens(uint256 amountIn, uint256 amountOutMin, address[] path, address to, uint256 deadline)',
+])
+
 export const escrowAbi = parseAbi([
   'function create_lock(uint256 value, uint256 lockDuration) returns (uint256)',
   'function increase_amount(uint256 tokenId, uint256 value)',

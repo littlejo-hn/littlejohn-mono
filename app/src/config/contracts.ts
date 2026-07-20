@@ -42,6 +42,19 @@ export const DEPLOYMENTS: Record<number, Deployment> = {
   },
 }
 
+// The chain's own dominant DEX (Uniswap V2 on Robinhood), used by the terminal to
+// execute swaps on chain-wide trenches tokens — separate from our own venue above,
+// which is frozen on mainnet until "the day". Verified on-chain: router.factory()
+// round-trips the canonical factory (0x8bcE…937f, same deployer, 2.26M txs) and
+// router.WETH() matches our WETH. NOT the aggregator 0xbde9…f405 (non-standard) nor
+// the low-tx secondary 0x07E9…78a6. Only V2-pool tokens route here; V3/V4 deep-link.
+export const V2_DEX: Record<number, { router: Address; weth: Address }> = {
+  4663: {
+    router: '0x89e5DB8B5aA49aA85AC63f691524311AEB649eba',
+    weth: '0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73',
+  },
+}
+
 export function deployment(chainId: number): Deployment | undefined {
   return DEPLOYMENTS[chainId]
 }

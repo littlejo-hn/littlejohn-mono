@@ -532,3 +532,59 @@ nav.tabs button.active{background:var(--surface-2);color:var(--ink)}
 .term-empty{padding:2.5rem 1rem;text-align:center;color:var(--dim);font-size:.9rem}
 .term-foot{color:var(--faint);font-size:.72rem;text-align:center}
 @media (max-width:600px){.term-hrow{top:52px}}
+
+/* ── Terminal: row is now clickable (opens the trade drawer) ───────────── */
+.term-coin{cursor:pointer}
+.term-coin:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+
+/* ── Token trade drawer ───────────────────────────────────────────────── */
+.drawer-scrim{position:fixed;inset:0;z-index:100;background:rgba(4,5,7,.6);backdrop-filter:blur(2px);display:flex;justify-content:flex-end}
+.drawer{width:min(400px,100%);height:100%;background:var(--surface);border-left:1px solid var(--line-2);padding:var(--s4);overflow-y:auto;display:flex;flex-direction:column;gap:var(--s3);animation:drawer-in .16s ease}
+@keyframes drawer-in{from{transform:translateX(16px);opacity:.4}to{transform:none;opacity:1}}
+@media(prefers-reduced-motion:reduce){.drawer{animation:none}}
+.drawer-x{position:absolute;top:var(--s3);right:var(--s3);width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;color:var(--dim);cursor:pointer}
+.drawer-x:hover{color:var(--ink);border-color:var(--line-2)}
+.drawer-head{display:flex;align-items:center;gap:.6rem;padding-right:34px}
+.drawer-img{width:40px;height:40px;border-radius:10px;flex:none;object-fit:cover;font-size:1rem;font-weight:700}
+.drawer-id{min-width:0;flex:1}
+.drawer-sym{font-weight:700;font-size:1.05rem;display:flex;align-items:center;gap:.45rem}
+.drawer-chg{font-size:.76rem;font-weight:600}
+.drawer-chg.up{color:var(--up)}
+.drawer-chg.down{color:var(--down)}
+.drawer-name{font-size:.78rem;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.drawer-price{font-family:var(--mono);font-size:1rem;font-weight:600}
+.drawer-links{display:flex;align-items:center;gap:.5rem;font-size:.76rem}
+.drawer-dex{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--pill);padding:.15rem .6rem;color:var(--dim);font-weight:600}
+.drawer-links a{display:inline-flex;align-items:center;gap:.2rem;color:var(--dim);text-decoration:none}
+.drawer-links a:hover{color:var(--accent)}
+.drawer-ext{background:var(--field);border:1px solid var(--line);border-radius:var(--r-sm);padding:var(--s3);font-size:.85rem;color:var(--dim);line-height:1.5}
+.drawer-ext p{margin:0 0 var(--s3)}
+.drawer-ext b{color:var(--ink);font-weight:600}
+
+/* ── Terminal trade box ───────────────────────────────────────────────── */
+.tt{display:flex;flex-direction:column;gap:var(--s2)}
+.tt-tabs{display:flex;gap:.25rem;background:var(--field);border:1px solid var(--line);border-radius:var(--r-sm);padding:.25rem}
+.tt-tabs button{flex:1;height:38px;background:transparent;color:var(--dim);border:0;border-radius:6px;font-weight:700;font-size:.88rem;cursor:pointer;transition:.12s}
+.tt-tabs .buy.on{background:var(--up);color:#06230f}
+.tt-tabs .sell.on{background:var(--down);color:#2a060c}
+.tt-field{background:var(--field);border:1px solid var(--line);border-radius:var(--r-sm);padding:var(--s3)}
+.tt-row{display:flex;align-items:center;justify-content:space-between;gap:var(--s2)}
+.tt-row span:first-child{color:var(--dim);font-size:.74rem;text-transform:uppercase;letter-spacing:.05em}
+.tt-tok{display:inline-flex;align-items:center;height:28px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--pill);padding:0 .7rem;font-weight:600;font-size:.8rem}
+.tt-field input{background:transparent;border:0;color:var(--ink);font-family:var(--mono);font-size:1.4rem;font-weight:500;width:100%;outline:none;padding:.3rem 0 0}
+.tt-chips{display:flex;gap:.35rem;margin-top:.5rem}
+.tt-chips button{flex:1;height:28px;background:var(--surface-2);border:1px solid var(--line);color:var(--dim);border-radius:6px;font-size:.76rem;font-weight:600;cursor:pointer;transition:.12s}
+.tt-chips button:hover:not(:disabled){border-color:var(--line-2);color:var(--ink)}
+.tt-chips button:disabled{opacity:.4;cursor:not-allowed}
+.tt-bal{color:var(--dim);font-size:.76rem;margin-top:.5rem}
+.tt-min{color:var(--faint);font-size:.72rem;margin-top:.4rem}
+.tt-slip{display:flex;align-items:center;gap:.35rem;font-size:.76rem;color:var(--dim)}
+.tt-slip span{margin-right:.2rem}
+.tt-slip button{height:26px;padding:0 .6rem;background:var(--surface-2);border:1px solid var(--line);color:var(--dim);border-radius:6px;font-size:.74rem;font-weight:600;cursor:pointer}
+.tt-slip button.on{border-color:transparent;color:var(--accent);background:var(--accent-soft)}
+.tt-go{width:100%;height:44px;margin-top:.3rem;display:flex;align-items:center;justify-content:center;gap:.5rem;font-weight:700;font-size:.9rem;color:#06230f;border:0;border-radius:var(--r-sm);background:var(--up);cursor:pointer;text-decoration:none;transition:.12s}
+.tt-go:hover:not(:disabled){filter:brightness(1.08)}
+.tt-go:disabled{opacity:.5;cursor:not-allowed}
+.tt-go.warn{background:#e8b64a;color:#3a2a06}
+.tt-err{color:var(--down);font-size:.78rem;word-break:break-word}
+.tt-foot{color:var(--faint);font-size:.7rem;text-align:center;margin-top:.2rem}
