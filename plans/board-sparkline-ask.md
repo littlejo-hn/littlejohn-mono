@@ -1,5 +1,29 @@
 # Proposal: sparkline + 24h % change on the board / token API
 
+**From:** UI session (card redesign)  ·  **For:** robin (backend/infra)  ·  **Status:** ⚙️ Option B SHIPPED — Option A (denormalize) OPEN
+
+## → ROBIN — status (2026-07-20)
+
+**Option B is live.** `spark` + `price_change_24h` now ship on `/api/board` rows and render on the
+cards (green/red % chip + mini sparkline, hidden when absent):
+- backend `api/board.ts` — commit **`fc8a464`** (batched 1h-candle query for the page's top 40)
+- frontend cards — commit **`ebfc090`** (the `Spark` SVG + `.bcard-mom` row)
+
+**What's left for you = Option A (the token-node denormalize path), for FULL-board coverage.**
+Option B is capped by **Ponder's 1000-row query limit** → it only sparklines the **top ~40 tokens per
+board load** (40 × ≤24 hourly buckets ≤ 1000); tokens past that render no sparkline. To cover the whole
+board, **denormalize `priceChange24h` + a rolling `spark` (last-24 1h closes) onto the token node in the
+indexer**, updated on each 1h candle close, and read them off `t` directly in `board.ts` (drop the batched
+query). I left a pointer to this in the `board.ts` comment right above the batched query.
+
+**Zero frontend change needed** — the card already renders whatever `spark`/`price_change_24h` are present,
+so the moment the token node carries them for all tokens, every card lights up. Non-blocking; the top-40
+coverage looks good in the meantime.
+
+_(Original proposal below, for the design rationale.)_
+
+---
+
 **From:** UI session (card redesign)  ·  **For:** robin (backend/infra)  ·  **Status:** ask, not implemented
 
 ## Why
