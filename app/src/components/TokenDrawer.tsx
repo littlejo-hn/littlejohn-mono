@@ -42,7 +42,7 @@ export function TokenDrawer({ coin, onClose }: { coin: DrawerCoin | null; onClos
   }, [coin, onClose])
 
   if (!coin) return null
-  const tradeable = coin.dex === 'uniswap-v2-robinhood'
+  const tradeable = coin.dex === 'uniswap-v2-robinhood' || coin.dex === 'uniswap-v3-robinhood'
   const dexLabel = DEX_LABEL[coin.dex] ?? coin.dex
   const chart = `https://dexscreener.com/robinhood/${coin.pool}`
   const explorer = `https://robinhoodchain.blockscout.com/token/${coin.address}`
@@ -68,10 +68,10 @@ export function TokenDrawer({ coin, onClose }: { coin: DrawerCoin | null; onClos
         </div>
 
         {tradeable ? (
-          <TerminalTrade token={{ address: coin.address, symbol: coin.symbol, priceUsd: coin.priceUsd }} />
+          <TerminalTrade token={{ address: coin.address, pool: coin.pool, symbol: coin.symbol, dex: coin.dex, priceUsd: coin.priceUsd }} />
         ) : (
           <div className="drawer-ext">
-            <p>Inline trading covers <b>Uniswap V2</b> for now. <b>{coin.symbol}</b> trades on <b>{dexLabel}</b> — V3/V4 routing is next.</p>
+            <p>Inline trading covers <b>Uniswap V2 & V3</b> for now. <b>{coin.symbol}</b> trades on <b>{dexLabel}</b> — V4 routing is next.</p>
             <a className="tt-go" href={chart} target="_blank" rel="noopener noreferrer">Trade on {dexLabel} <ArrowSquareOut size={14} /></a>
           </div>
         )}

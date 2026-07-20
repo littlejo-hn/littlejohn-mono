@@ -55,6 +55,17 @@ export const V2_DEX: Record<number, { router: Address; weth: Address }> = {
   },
 }
 
+// Uniswap V3 on Robinhood — SwapRouter02 + QuoterV2, both verified on-chain
+// (router.WETH9()/factory() and a live QuoterV2 round-trip; see the V3 lookup).
+// SwapRouter02 also routes V2, but we keep the V2 path on the dedicated V2 router.
+export const V3_DEX: Record<number, { router: Address; quoter: Address; weth: Address }> = {
+  4663: {
+    router: '0xCaf681a66D020601342297493863E78C959E5cb2',
+    quoter: '0x8a49d86832f1fB6b4dDD04A37A2023A0b688e1B6',
+    weth: '0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73',
+  },
+}
+
 export function deployment(chainId: number): Deployment | undefined {
   return DEPLOYMENTS[chainId]
 }

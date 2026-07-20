@@ -33,6 +33,25 @@ export const uniV2RouterAbi = parseAbi([
   'function swapExactTokensForETHSupportingFeeOnTransferTokens(uint256 amountIn, uint256 amountOutMin, address[] path, address to, uint256 deadline)',
 ])
 
+// Uniswap V3 (Robinhood). The trenches feed gives the exact pool address, so we read
+// its fee tier + tokens on-chain rather than guessing. QuoterV2 is nonpayable upstream
+// but declared view here so viem quotes it via eth_call (the node runs it either way).
+// SwapRouter02 has no native-ETH unwrap on sells, so sells go through multicall(
+// [exactInputSingle(recipient=ADDRESS_THIS), unwrapWETH9]); buys send value directly.
+export const uniV3PoolAbi = parseAbi([
+  'function fee() view returns (uint24)',
+  'function token0() view returns (address)',
+  'function token1() view returns (address)',
+])
+export const uniV3QuoterAbi = parseAbi([
+  'function quoteExactInputSingle((address tokenIn, address tokenOut, uint256 amountIn, uint24 fee, uint160 sqrtPriceLimitX96) params) view returns (uint256 amountOut, uint160 sqrtPriceX96After, uint32 initializedTicksCrossed, uint256 gasEstimate)',
+])
+export const uniV3RouterAbi = parseAbi([
+  'function exactInputSingle((address tokenIn, address tokenOut, uint24 fee, address recipient, uint256 amountIn, uint256 amountOutMinimum, uint160 sqrtPriceLimitX96) params) payable returns (uint256 amountOut)',
+  'function unwrapWETH9(uint256 amountMinimum, address recipient) payable',
+  'function multicall(bytes[] data) payable returns (bytes[] results)',
+])
+
 export const escrowAbi = parseAbi([
   'function create_lock(uint256 value, uint256 lockDuration) returns (uint256)',
   'function increase_amount(uint256 tokenId, uint256 value)',
