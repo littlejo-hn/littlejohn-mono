@@ -10,6 +10,7 @@ export type Listed = {
   price: number; mcap: number; creator: `0x${string}`
   creatorName?: string | null; creatorAvatar?: string | null
   volEth?: number; createdTs?: number
+  spark?: number[]; change24h?: number | null
   image?: string; banner?: string; name?: string; description?: string
   twitter?: string; telegram?: string; website?: string
 }

@@ -22,6 +22,24 @@ function fmtAge(ts?: number): string {
   return `${Math.floor(s / 86400)}d`
 }
 
+// Tiny 24h sparkline for a board card. Normalized to its own range; stroke
+// colored by the sign of the move. Absolute price units don't matter (shape only).
+function Spark({ points, up }: { points: number[]; up: boolean }) {
+  if (!points || points.length < 2) return null
+  const w = 100, h = 24
+  const min = Math.min(...points), max = Math.max(...points)
+  const span = max - min || 1
+  const step = w / (points.length - 1)
+  const d = points
+    .map((p, i) => `${i ? 'L' : 'M'}${(i * step).toFixed(1)} ${(h - ((p - min) / span) * (h - 4) - 2).toFixed(1)}`)
+    .join(' ')
+  return (
+    <svg className="bcard-spark" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden="true">
+      <path d={d} fill="none" stroke={up ? 'var(--up)' : 'var(--down)'} strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 // Wash-resistant trending: rank by market-cap velocity (mcap per hour since
 // launch). mcap tracks the net curve position, which wash trading (a net-zero
 // buy+sell round-trip) can't move — unlike raw volume, which is trivially faked.
@@ -67,7 +85,7 @@ export function Launch() {
     if (!import.meta.env.VITE_RPC_URL) try {
       const res = await fetch('/api/board?sort=mcap&limit=200')
       if (res.ok) {
-        const data = (await res.json()) as { tokens?: Array<{ address: `0x${string}`; symbol: string | null; name: string | null; image: string | null; price: number | null; mcap: number | null; graduated: boolean; tokens_sold: string | null; creator: string | null; vol_eth: number; created_ts: number | null; creator_name: string | null; creator_avatar: string | null }> }
+        const data = (await res.json()) as { tokens?: Array<{ address: `0x${string}`; symbol: string | null; name: string | null; image: string | null; price: number | null; mcap: number | null; graduated: boolean; tokens_sold: string | null; creator: string | null; vol_eth: number; created_ts: number | null; creator_name: string | null; creator_avatar: string | null; spark: number[] | null; price_change_24h: number | null }> }
         const rows = data.tokens ?? []
         if (rows.length) {
           const apiList: Listed[] = rows.map((r) => ({
@@ -84,6 +102,8 @@ export function Launch() {
             createdTs: r.created_ts ?? 0,
             creatorName: r.creator_name,
             creatorAvatar: r.creator_avatar,
+            spark: r.spark ?? undefined,
+            change24h: r.price_change_24h ?? null,
           }))
           setTokens(apiList)
           setLoaded(true)
@@ -222,6 +242,12 @@ export function Launch() {
                     <span className="bcard-mc">{fmtUsd(t.mcap * ethUsd)}<em>MC</em></span>
                     <span className="bcard-vol">{fmtUsd((t.volEth ?? 0) * ethUsd)} vol · {fmtAge(t.createdTs)}</span>
                   </div>
+                  {t.change24h != null && (
+                    <div className="bcard-mom">
+                      <Spark points={t.spark ?? []} up={t.change24h >= 0} />
+                      <span className={`bcard-chg ${t.change24h >= 0 ? 'up' : 'down'}`}>{t.change24h >= 0 ? '+' : ''}{t.change24h.toFixed(1)}%</span>
+                    </div>
+                  )}
                   <div className="bcard-creator">
                     <Avatar className="bcard-creator-av" image={t.creatorAvatar ?? undefined} symbol={t.creatorName || t.creator} addr={t.creator} />
                     <span>{t.creatorName || short(t.creator)}</span>

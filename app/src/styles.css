@@ -381,6 +381,12 @@ nav.tabs button.active{background:var(--surface-2);color:var(--ink)}
 .bcard-mc{font-family:var(--mono);font-weight:700;font-size:.96rem;color:var(--up);line-height:1;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
 .bcard-mc em{font-style:normal;font-family:var(--sans);font-size:.6rem;font-weight:700;color:var(--faint);letter-spacing:.06em;margin-left:.26rem}
 .bcard-vol{font-size:.72rem;color:var(--dim);white-space:nowrap;font-variant-numeric:tabular-nums}
+/* 24h momentum row: sparkline + % change chip */
+.bcard-mom{display:flex;align-items:center;gap:.5rem;margin-top:.5rem}
+.bcard-spark{flex:1;min-width:0;height:22px;display:block}
+.bcard-chg{flex:none;font-family:var(--mono);font-size:.74rem;font-weight:700;font-variant-numeric:tabular-nums}
+.bcard-chg.up{color:var(--up)}
+.bcard-chg.down{color:var(--down)}
 .bcard-bar{position:absolute;left:0;right:0;bottom:0;height:4px;background:rgba(0,0,0,.45);overflow:hidden}
 .bcard-bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--up),#9dffcf);box-shadow:0 0 12px var(--up)}
 .bcard-pill{position:absolute;top:.5rem;left:.5rem;z-index:1}
