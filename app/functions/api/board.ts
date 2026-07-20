@@ -56,16 +56,59 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
         creator: t.creator,
         creator_name: null as string | null,
         creator_avatar: null as string | null,
+        spark: null as number[] | null,
+        price_change_24h: null as number | null,
       }
     })
     // Attach creator username/avatar (one batched profile lookup for the page).
+    // Guarded: profiles are enrichment, so a D1 hiccup (or an unmigrated table)
+    // degrades to coins-without-names instead of 500ing the whole board.
     if (env.DB) {
-      const profs = await profilesFor(env.DB, tokens.map((t) => t.creator).filter(Boolean))
-      for (const t of tokens) {
-        const p = profs[String(t.creator).toLowerCase()]
-        if (p) { t.creator_name = p.username; t.creator_avatar = p.avatar }
-      }
+      try {
+        const profs = await profilesFor(env.DB, tokens.map((t) => t.creator).filter(Boolean))
+        for (const t of tokens) {
+          const p = profs[String(t.creator).toLowerCase()]
+          if (p) { t.creator_name = p.username; t.creator_avatar = p.avatar }
+        }
+      } catch { /* enrichment only; board still returns without creator profiles */ }
     }
+
+    // 24h momentum: sparkline (hourly closes) + % change, from the pre-aggregated
+    // 1h candles in ONE batched query. Ponder caps a query at 1000 rows, so we
+    // sparkline the top SPARK_LIMIT tokens of the page (≤~25 buckets each ≤ 1000);
+    // the rest stay null and the card just omits the sparkline. For full-board
+    // coverage without the cap, denormalize spark/price_change onto the token node
+    // in the indexer (update on each 1h candle close) and read them off `t` here.
+    const SPARK_LIMIT = 40
+    const sparkAddrs = tokens.slice(0, SPARK_LIMIT).map((t) => String(t.address).toLowerCase())
+    if (sparkAddrs.length) {
+      const cutoff = Math.floor(Date.now() / 1000) - 86400
+      const inList = sparkAddrs.map((a) => `"${a}"`).join(',')
+      const cq = `{ candles(where:{token_in:[${inList}], interval:"1h", bucketStart_gt:${cutoff}}, orderBy:"bucketStart", orderDirection:"desc", limit:1000){
+        items{ token close }
+      } }`
+      try {
+        const cd = await ponderQuery<{ candles: { items: any[] } }>(env, cq)
+        const byTok = new Map<string, number[]>()
+        for (const c of cd.candles?.items ?? []) {
+          const v = weiToNum(c.close)
+          if (v == null) continue
+          const k = String(c.token).toLowerCase()
+          const arr = byTok.get(k)
+          if (arr) arr.push(v); else byTok.set(k, [v])
+        }
+        for (const t of tokens) {
+          const s = byTok.get(String(t.address).toLowerCase())
+          if (s && s.length >= 2) {
+            s.reverse() // fetched desc so a 1000-row cap drops the OLDEST bucket, not the latest price; flip to chronological
+            t.spark = s
+            const first = s[0], last = s[s.length - 1]
+            t.price_change_24h = first > 0 ? ((last - first) / first) * 100 : null
+          }
+        }
+      } catch { /* momentum is best-effort; the board still returns without it */ }
+    }
+
     return json({ tokens })
   } catch (e) {
     return json({ error: e instanceof Error ? e.message : String(e) }, 500)
