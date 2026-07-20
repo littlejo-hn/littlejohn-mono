@@ -501,3 +501,34 @@ nav.tabs button.active{background:var(--surface-2);color:var(--ink)}
   .season{display:none}
   .statcards{grid-template-columns:1fr}
 }
+
+/* ---------------------------------------------------------- trenches terminal */
+.term{display:flex;flex-direction:column;gap:var(--s3);padding-bottom:var(--s5)}
+.term-head{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--s3);flex-wrap:wrap}
+.term-title{font-size:1.35rem;font-weight:750;letter-spacing:-.02em}
+.term-sub{color:var(--dim);font-size:.85rem;margin-top:.15rem;max-width:52ch}
+.term-table{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow-x:auto}
+.term-row{display:grid;grid-template-columns:30px minmax(150px,1.6fr) repeat(7,minmax(58px,.9fr)) 46px;align-items:center;gap:.5rem;padding:.55rem .8rem;min-width:760px;border-bottom:1px solid var(--line);text-decoration:none;color:var(--ink)}
+.term-row:last-child{border-bottom:0}
+.term-hrow{background:var(--surface-2);border-bottom:1px solid var(--line-2);border-radius:var(--r) var(--r) 0 0;font-size:.68rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--faint)}
+.term-hrow .tc-num,.term-hrow .tc-tok{cursor:default}
+.term-coin{transition:background .1s ease}
+.term-coin:hover{background:var(--surface-2)}
+.tc-rank{font-family:var(--mono);font-size:.74rem;color:var(--faint);text-align:center}
+.tc-tok{display:flex;align-items:center;gap:.55rem;min-width:0}
+.tc-img{width:30px;height:30px;border-radius:8px;flex:none;object-fit:cover;font-size:.8rem;font-weight:700}
+.tc-toktext{display:flex;flex-direction:column;min-width:0;line-height:1.15}
+.tc-sym{font-weight:650;font-size:.9rem;display:flex;align-items:center;gap:.35rem}
+.tc-fresh{font-style:normal;font-size:.56rem;font-weight:800;letter-spacing:.04em;color:var(--up);background:var(--accent-soft);padding:.05rem .3rem;border-radius:4px}
+.tc-name{font-size:.72rem;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tc-num{text-align:right;font-size:.82rem}
+.tc-num.up{color:var(--up)}
+.tc-num.down{color:var(--down)}
+.tc-num.warn{color:#e8b64a}
+.tc-flow b{font-weight:600}
+.tc-age{color:var(--dim)}
+.term-skel{display:block;height:14px;width:60%;border-radius:5px;background:linear-gradient(90deg,var(--surface-2),var(--line),var(--surface-2));background-size:200% 100%;animation:shimmer 1.2s infinite}
+@keyframes shimmer{to{background-position:-200% 0}}
+.term-empty{padding:2.5rem 1rem;text-align:center;color:var(--dim);font-size:.9rem}
+.term-foot{color:var(--faint);font-size:.72rem;text-align:center}
+@media (max-width:600px){.term-hrow{top:52px}}

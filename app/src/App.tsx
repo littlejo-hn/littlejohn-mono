@@ -7,6 +7,7 @@ import { SearchModal } from './components/SearchModal'
 import { Claim } from './pages/Claim'
 import { Create } from './pages/Create'
 import { Launch } from './pages/Launch'
+import { Trenches } from './pages/Trenches'
 import { CoinPage } from './pages/CoinPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { UserPage } from './pages/UserPage'
@@ -122,7 +123,8 @@ export function App() {
 
         <div key={pathname} className={`page-enter ${pathname === '/' || pathname.startsWith('/coin/') || pathname.startsWith('/u/') ? 'stage-wide' : 'stage-inner'}`}>
           <Routes>
-            <Route path="/" element={<Launch />} />
+            <Route path="/" element={<Trenches />} />
+            <Route path="/launch" element={<Launch />} />
             <Route path="/coin/:addr" element={<CoinPage />} />
             <Route path="/create" element={<Create onCreated={() => navigate('/')} />} />
             <Route path="/swap" element={<Swap />} />

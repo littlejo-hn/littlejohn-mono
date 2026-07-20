@@ -14,6 +14,8 @@ const TTL: Record<string, number> = {
   candles: 12,
   holders: 20,
   search: 8,
+  // trenches handles its own cache-through + serve-stale (GeckoTerminal 429s from
+  // Cloudflare's shared egress IPs, so it must serve the last-good copy on failure).
 }
 
 export const onRequest: PagesFunction = async (ctx) => {
