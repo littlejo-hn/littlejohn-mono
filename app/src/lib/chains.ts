@@ -17,6 +17,9 @@ export const robinhoodMainnet = defineChain({
   nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
   rpcUrls: { default: { http: ['https://rpc.mainnet.chain.robinhood.com', ...RPC_FALLBACKS] } },
   blockExplorers: { default: { name: 'Blockscout', url: 'https://robinhoodchain.blockscout.com' } },
+  // Canonical Multicall3 (verified deployed on RH) — lets the firehose enrich all
+  // new tokens in one batched call instead of hundreds of round trips.
+  contracts: { multicall3: { address: '0xcA11bde05977b3631167028862bE2a173976CA11' } },
 })
 
 export const robinhoodTestnet = defineChain({

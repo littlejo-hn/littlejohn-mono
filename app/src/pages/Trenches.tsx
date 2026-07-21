@@ -65,7 +65,9 @@ export function Trenches() {
   const load = useCallback(async (f: Feed) => {
     setLoading(true); setErr(null)
     try {
-      const res = await fetch(`/api/trenches?feed=${f}`)
+      // "New" reads the chain directly (0-lag launch firehose); the rest use the
+      // GeckoTerminal-composed board where lag doesn't matter.
+      const res = await fetch(f === 'new' ? '/api/firehose' : `/api/trenches?feed=${f}`)
       const data = (await res.json()) as { tokens?: Coin[]; error?: string }
       if (data.error && !(data.tokens || []).length) throw new Error(data.error)
       setCoins(data.tokens ?? [])
@@ -74,9 +76,10 @@ export function Trenches() {
   }, [])
 
   useEffect(() => { load(feed) }, [feed, load])
-  // Live-ish refresh every 20s (edge-cached, cheap).
+  // Refresh: the firehose ("New") ticks fast to stay near-real-time; the rest are
+  // edge-cached and cheap, so a slower cadence is fine.
   useEffect(() => {
-    const id = setInterval(() => load(feed), 20_000)
+    const id = setInterval(() => load(feed), feed === 'new' ? 5_000 : 20_000)
     return () => clearInterval(id)
   }, [feed, load])
 
@@ -147,7 +150,9 @@ export function Trenches() {
           </div>
         ))}
       </div>
-      <div className="term-foot">Data via GeckoTerminal · trending ranked by unique buyers, not raw volume · not financial advice</div>
+      <div className="term-foot">{feed === 'new'
+        ? 'Live from chain · new pools appear ~1 block (~0.1s) after creation, straight from the Uniswap V2/V3 factories · not financial advice'
+        : 'Data via GeckoTerminal · trending ranked by unique buyers, not raw volume · not financial advice'}</div>
       <TokenDrawer coin={sel} onClose={() => setSel(null)} />
     </div>
   )
