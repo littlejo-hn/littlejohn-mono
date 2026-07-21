@@ -140,7 +140,7 @@ export function Trenches() {
         ))}
       </div>
       <div className="term-foot">{feed === 'new'
-        ? 'Live from chain · new pools appear ~1 block (~0.1s) after creation, straight from the Uniswap V2/V3 factories · not financial advice'
+        ? 'Live from chain · new pools appear ~1 block (~0.1s) after creation, straight from the Uniswap V2/V3/V4 factories · not financial advice'
         : 'Data via GeckoTerminal · trending ranked by unique buyers, not raw volume · not financial advice'}</div>
       <TokenDrawer coin={sel} onClose={() => setSel(null)} />
     </div>

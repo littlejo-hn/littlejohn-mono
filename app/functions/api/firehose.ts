@@ -1,24 +1,29 @@
-// GET /api/firehose — the 0-lag launch feed. Instead of mirroring GeckoTerminal
-// (seconds-to-minutes behind), we read the chain directly: eth_getLogs for new-pool
-// events on the Uniswap V2 + V3 factories over the last ~3 min (~0.1s blocks), then
-// enrich every new token in ONE Multicall3 batch (symbol/name/decimals + quote
-// reserve). New pools hit the board ~1 block after creation. V4/pad-native launches
-// are the next source. Cache-through + serve-stale so RH's RPC is hit rarely.
+// GET /api/firehose — the 0-lag launch feed. Reads the chain directly (not GeckoTerminal)
+// so new pools surface ~1 block after creation. Watches the new-pool events on three
+// Uniswap venues — V2 (PairCreated) + V3 (PoolCreated) factories and V4's singleton
+// PoolManager (Initialize) — then enriches every new token in ONE Multicall3 batch
+// (symbol/name/decimals + a liquidity read: quote-token balance for V2/V3, on-chain
+// liquidity via StateView for V4). Non-Uniswap pads (Pons, Bankr, …) are separate
+// venues added next. Cache-through + serve-stale so RH's RPC is hit rarely.
 import { createPublicClient, http, parseAbiItem, type Address } from 'viem'
 import { json } from './_ponder'
 
 const RPC = 'https://rpc.mainnet.chain.robinhood.com'
+const ZERO = '0x0000000000000000000000000000000000000000' as Address // native ETH in V4
 const WETH = '0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73' as Address
 const USDG = '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168' as Address
 const USDG_WETH = '0x52e65b17fb6e5ba00ed806f37afcd2daa50271ca' as Address // ref pool for ethUsd
 const V2_FACTORY = '0x8bcEaA40B9AcdfAedF85AdF4FF01F5Ad6517937f' as Address
 const V3_FACTORY = '0x1f7d7550B1b028f7571E69A784071F0205FD2EfA' as Address
+const V4_POOL_MANAGER = '0x8366a39CC670B4001A1121B8F6A443A643e40951' as Address
+const V4_STATE_VIEW = '0xF3334192D15450CdD385c8B70e03f9A6bD9E673b' as Address
 const MULTICALL3 = '0xcA11bde05977b3631167028862bE2a173976CA11' as Address
-const QUOTES = new Set([WETH.toLowerCase(), USDG.toLowerCase()])
+const QUOTES = new Set([ZERO.toLowerCase(), WETH.toLowerCase(), USDG.toLowerCase()])
 
 const WINDOW = 2000n // ~3.3 min of blocks at ~0.1s
 const BLOCK_S = 0.1 // measured avg block time (age approximation)
 const MIN_LIQ = 200 // drop dust
+const MAX_ENRICH = 90 // cap the batch regardless of launch rate
 const MAX = 60
 
 const chain = {
@@ -32,9 +37,10 @@ const symbolAbi = parseAbiItem('function symbol() view returns (string)')
 const nameAbi = parseAbiItem('function name() view returns (string)')
 const decimalsAbi = parseAbiItem('function decimals() view returns (uint8)')
 const balanceOfAbi = parseAbiItem('function balanceOf(address) view returns (uint256)')
+const getLiquidityAbi = parseAbiItem('function getLiquidity(bytes32 poolId) view returns (uint128)')
 const num = (v: bigint, dec: number) => Number(v) / 10 ** dec
+const Q96 = 2n ** 96n
 
-// The terminal Card shape (matches /api/trenches so rows render identically).
 type Card = {
   pool: string; address: string; symbol: string; name: string; image: string | null; dex: string
   priceUsd: number; fdvUsd: number; liqUsd: number; vol24: number; vol1h: number
@@ -42,43 +48,68 @@ type Card = {
   createdTs: number; score: number
 }
 
+// A discovered launch, normalized across venues. `kind` selects the liquidity read.
+type Cand = {
+  token: Address; quote: Address; pool: string; dex: string; block: bigint
+  kind: 'erc20' | 'v4'; sqrtPriceX96?: bigint; quoteIs0?: boolean
+}
+
 async function build(): Promise<Card[]> {
   const client = createPublicClient({ chain, transport: http(RPC, { retryCount: 2, timeout: 8000 }) })
   const latest = await client.getBlockNumber()
   const from = latest > WINDOW ? latest - WINDOW : 0n
 
-  const [anchor, v2Logs, v3Logs] = await Promise.all([
+  const [anchor, v2Logs, v3Logs, v4Logs] = await Promise.all([
     client.getBlock({ blockNumber: latest }),
     client.getLogs({ address: V2_FACTORY, event: parseAbiItem('event PairCreated(address indexed token0, address indexed token1, address pair, uint256 allPairsLength)'), fromBlock: from, toBlock: latest }),
     client.getLogs({ address: V3_FACTORY, event: parseAbiItem('event PoolCreated(address indexed token0, address indexed token1, uint24 indexed fee, int24 tickSpacing, address pool)'), fromBlock: from, toBlock: latest }),
+    client.getLogs({ address: V4_POOL_MANAGER, event: parseAbiItem('event Initialize(bytes32 indexed id, address indexed currency0, address indexed currency1, uint24 fee, int24 tickSpacing, address hooks, uint160 sqrtPriceX96, int24 tick)'), fromBlock: from, toBlock: latest }),
   ])
   const anchorTs = Number(anchor.timestamp)
 
-  // Normalize both factories to a common shape; keep only one-quote-side pools.
-  type Cand = { pool: Address; token: Address; quote: Address; dex: string; block: bigint }
   const cands: Cand[] = []
-  const push = (t0: Address, t1: Address, pool: Address, dex: string, block: bigint) => {
+  const erc20 = (t0: Address, t1: Address, pool: Address, dex: string, block: bigint) => {
     const t0q = QUOTES.has(t0.toLowerCase()), t1q = QUOTES.has(t1.toLowerCase())
-    if (t0q === t1q) return // need exactly one recognized quote token
-    cands.push({ pool, token: t0q ? t1 : t0, quote: t0q ? t0 : t1, dex, block })
+    if (t0q === t1q) return
+    cands.push({ token: t0q ? t1 : t0, quote: t0q ? t0 : t1, pool, dex, block, kind: 'erc20' })
   }
-  for (const l of v2Logs) push(l.args.token0!, l.args.token1!, l.args.pair!, 'uniswap-v2-robinhood', l.blockNumber)
-  for (const l of v3Logs) push(l.args.token0!, l.args.token1!, l.args.pool!, 'uniswap-v3-robinhood', l.blockNumber)
+  for (const l of v2Logs) erc20(l.args.token0!, l.args.token1!, l.args.pair!, 'uniswap-v2-robinhood', l.blockNumber)
+  for (const l of v3Logs) erc20(l.args.token0!, l.args.token1!, l.args.pool!, 'uniswap-v3-robinhood', l.blockNumber)
+  for (const l of v4Logs) {
+    const c0 = l.args.currency0!, c1 = l.args.currency1!
+    const c0q = QUOTES.has(c0.toLowerCase()), c1q = QUOTES.has(c1.toLowerCase())
+    if (c0q === c1q) continue
+    cands.push({
+      token: c0q ? c1 : c0, quote: c0q ? c0 : c1, pool: l.args.id!, dex: 'uniswap-v4-robinhood',
+      block: l.blockNumber, kind: 'v4', sqrtPriceX96: l.args.sqrtPriceX96!, quoteIs0: c0q,
+    })
+  }
   if (!cands.length) return []
+  // Newest first, capped, then dedupe by token so one launch isn't enriched twice.
+  cands.sort((a, b) => Number(b.block - a.block))
+  const seen = new Set<string>()
+  const picked = cands.filter((c) => {
+    const k = c.token.toLowerCase()
+    if (seen.has(k)) return false
+    seen.add(k); return true
+  }).slice(0, MAX_ENRICH)
 
-  // One batched read: ethUsd (from the ref pool) + per-token symbol/name/decimals/quote reserve.
+  // One batched read: ethUsd (ref pool) + per-candidate symbol/name/decimals + a
+  // liquidity read (quote balanceOf for V2/V3, StateView.getLiquidity for V4).
   const eth = [
     { address: WETH, abi: [balanceOfAbi], functionName: 'balanceOf', args: [USDG_WETH] },
     { address: USDG, abi: [balanceOfAbi], functionName: 'balanceOf', args: [USDG_WETH] },
     { address: USDG, abi: [decimalsAbi], functionName: 'decimals' },
   ] as const
-  const perToken = cands.flatMap((c) => [
+  const perCand = picked.flatMap((c) => [
     { address: c.token, abi: [symbolAbi], functionName: 'symbol' },
     { address: c.token, abi: [nameAbi], functionName: 'name' },
     { address: c.token, abi: [decimalsAbi], functionName: 'decimals' },
-    { address: c.quote, abi: [balanceOfAbi], functionName: 'balanceOf', args: [c.pool] },
+    c.kind === 'v4'
+      ? { address: V4_STATE_VIEW, abi: [getLiquidityAbi], functionName: 'getLiquidity', args: [c.pool as `0x${string}`] }
+      : { address: c.quote, abi: [balanceOfAbi], functionName: 'balanceOf', args: [c.pool as Address] },
   ])
-  const res = await client.multicall({ contracts: [...eth, ...perToken], allowFailure: true })
+  const res = await client.multicall({ contracts: [...eth, ...perCand], allowFailure: true })
 
   const usdgDec = Number(res[2].result ?? 6n)
   const wethRef = num((res[0].result as bigint) ?? 0n, 18)
@@ -86,16 +117,26 @@ async function build(): Promise<Card[]> {
   const ethUsd = wethRef > 0 ? usdgRef / wethRef : 0
 
   const cards: Card[] = []
-  for (let i = 0; i < cands.length; i++) {
-    const c = cands[i]
+  for (let i = 0; i < picked.length; i++) {
+    const c = picked[i]
     const b = 3 + i * 4
     const symbol = res[b].result as string | undefined
     const name = res[b + 1].result as string | undefined
-    const qbal = res[b + 3].result as bigint | undefined
-    if (!symbol || qbal == null) continue
-    const qIsWeth = c.quote.toLowerCase() === WETH.toLowerCase()
-    const qReserve = num(qbal, qIsWeth ? 18 : usdgDec)
-    const liqUsd = 2 * qReserve * (qIsWeth ? ethUsd : 1) // both sides ~= 2x the quote reserve
+    const liq = res[b + 3].result as bigint | undefined
+    if (!symbol || liq == null) continue
+    const isUsdg = c.quote.toLowerCase() === USDG.toLowerCase()
+    const quoteDec = isUsdg ? usdgDec : 18
+    const quotePrice = isUsdg ? 1 : ethUsd
+    // Quote-side reserve: V2/V3 read the pool's balance directly; V4 derives it from
+    // liquidity L and the pool's sqrt price (full-range approximation — a rough TVL
+    // gauge for the dust filter, since the singleton holds no per-pool balance).
+    let qReserveWei = liq
+    if (c.kind === 'v4') {
+      const sp = c.sqrtPriceX96 ?? 0n
+      if (sp === 0n) continue
+      qReserveWei = c.quoteIs0 ? (liq * Q96) / sp : (liq * sp) / Q96
+    }
+    const liqUsd = 2 * num(qReserveWei, quoteDec) * quotePrice
     if (!(liqUsd >= MIN_LIQ)) continue
     cards.push({
       pool: c.pool, address: c.token, symbol, name: name || symbol, image: null, dex: c.dex,
@@ -105,10 +146,7 @@ async function build(): Promise<Card[]> {
       score: Number(c.block),
     })
   }
-  // Dedupe by token (keep the deepest pool), newest first.
-  const byTok = new Map<string, Card>()
-  for (const c of cards) { const k = c.address.toLowerCase(); const p = byTok.get(k); if (!p || c.liqUsd > p.liqUsd) byTok.set(k, c) }
-  return [...byTok.values()].sort((a, b) => b.score - a.score).slice(0, MAX)
+  return cards.sort((a, b) => b.score - a.score).slice(0, MAX)
 }
 
 const FRESH_MS = 4_000 // refetch the chain at most this often
