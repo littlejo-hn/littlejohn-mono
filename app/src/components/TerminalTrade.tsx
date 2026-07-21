@@ -14,9 +14,12 @@ const ADDRESS_THIS = '0x0000000000000000000000000000000000000002' as Address // 
 type Side = 'buy' | 'sell'
 type Venue = 'v2' | 'v3'
 
+// Pads that fair-launch into canonical Uniswap pools trade through the matching Uniswap
+// path — Pons (and future such pads) are direct-to-pool V3, so they reuse the V3 route.
+const V3_LABELS = new Set(['uniswap-v3-robinhood', 'pons-dot-family'])
 function venueFor(dex: string): Venue | null {
   if (dex === 'uniswap-v2-robinhood') return 'v2'
-  if (dex === 'uniswap-v3-robinhood') return 'v3'
+  if (V3_LABELS.has(dex)) return 'v3'
   return null
 }
 

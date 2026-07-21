@@ -34,7 +34,7 @@ export function TokenDrawer({ coin, onClose }: { coin: DrawerCoin | null; onClos
   }, [coin, onClose])
 
   if (!coin) return null
-  const tradeable = coin.dex === 'uniswap-v2-robinhood' || coin.dex === 'uniswap-v3-robinhood'
+  const tradeable = ['uniswap-v2-robinhood', 'uniswap-v3-robinhood', 'pons-dot-family'].includes(coin.dex)
   const dexName = dexLabel(coin.dex)
   const chart = `https://dexscreener.com/robinhood/${coin.pool}`
   const explorer = `https://robinhoodchain.blockscout.com/token/${coin.address}`

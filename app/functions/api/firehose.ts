@@ -15,6 +15,10 @@ const USDG = '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168' as Address
 const USDG_WETH = '0x52e65b17fb6e5ba00ed806f37afcd2daa50271ca' as Address // ref pool for ethUsd
 const V2_FACTORY = '0x8bcEaA40B9AcdfAedF85AdF4FF01F5Ad6517937f' as Address
 const V3_FACTORY = '0x1f7d7550B1b028f7571E69A784071F0205FD2EfA' as Address
+// Pons is a launchpad that fair-launches straight into canonical V3 pools, so its
+// pools already come through the V3 watcher — we just watch its TokenLaunched event
+// to re-attribute those pools to "Pons" (and any other such pad slots in the same way).
+const PONS_FACTORY = '0xA5aAb3F0c6EeadF30Ef1D3Eb997108E976351feB' as Address
 const V4_POOL_MANAGER = '0x8366a39CC670B4001A1121B8F6A443A643e40951' as Address
 const V4_STATE_VIEW = '0xF3334192D15450CdD385c8B70e03f9A6bD9E673b' as Address
 const MULTICALL3 = '0xcA11bde05977b3631167028862bE2a173976CA11' as Address
@@ -59,13 +63,16 @@ async function build(): Promise<Card[]> {
   const latest = await client.getBlockNumber()
   const from = latest > WINDOW ? latest - WINDOW : 0n
 
-  const [anchor, v2Logs, v3Logs, v4Logs] = await Promise.all([
+  const [anchor, v2Logs, v3Logs, v4Logs, ponsLogs] = await Promise.all([
     client.getBlock({ blockNumber: latest }),
     client.getLogs({ address: V2_FACTORY, event: parseAbiItem('event PairCreated(address indexed token0, address indexed token1, address pair, uint256 allPairsLength)'), fromBlock: from, toBlock: latest }),
     client.getLogs({ address: V3_FACTORY, event: parseAbiItem('event PoolCreated(address indexed token0, address indexed token1, uint24 indexed fee, int24 tickSpacing, address pool)'), fromBlock: from, toBlock: latest }),
     client.getLogs({ address: V4_POOL_MANAGER, event: parseAbiItem('event Initialize(bytes32 indexed id, address indexed currency0, address indexed currency1, uint24 fee, int24 tickSpacing, address hooks, uint160 sqrtPriceX96, int24 tick)'), fromBlock: from, toBlock: latest }),
+    client.getLogs({ address: PONS_FACTORY, event: parseAbiItem('event TokenLaunched(address indexed token, address indexed deployer, address indexed dexFactory, address pairToken, address pool, uint256 dexId, uint256 launchConfigId, uint256 positionId, uint256 restrictionsEndBlock, uint256 initialBuyAmount)'), fromBlock: from, toBlock: latest }),
   ])
   const anchorTs = Number(anchor.timestamp)
+  // Pools that Pons launched (its pools are canonical V3, caught by the V3 watcher).
+  const ponsPools = new Set(ponsLogs.map((l) => l.args.pool!.toLowerCase()))
 
   const cands: Cand[] = []
   const erc20 = (t0: Address, t1: Address, pool: Address, dex: string, block: bigint) => {
@@ -74,7 +81,11 @@ async function build(): Promise<Card[]> {
     cands.push({ token: t0q ? t1 : t0, quote: t0q ? t0 : t1, pool, dex, block, kind: 'erc20' })
   }
   for (const l of v2Logs) erc20(l.args.token0!, l.args.token1!, l.args.pair!, 'uniswap-v2-robinhood', l.blockNumber)
-  for (const l of v3Logs) erc20(l.args.token0!, l.args.token1!, l.args.pool!, 'uniswap-v3-robinhood', l.blockNumber)
+  for (const l of v3Logs) {
+    // Attribute to the pad if it launched the pool (still a V3 pool under the hood).
+    const dex = ponsPools.has(l.args.pool!.toLowerCase()) ? 'pons-dot-family' : 'uniswap-v3-robinhood'
+    erc20(l.args.token0!, l.args.token1!, l.args.pool!, dex, l.blockNumber)
+  }
   for (const l of v4Logs) {
     const c0 = l.args.currency0!, c1 = l.args.currency1!
     const c0q = QUOTES.has(c0.toLowerCase()), c1q = QUOTES.has(c1.toLowerCase())
