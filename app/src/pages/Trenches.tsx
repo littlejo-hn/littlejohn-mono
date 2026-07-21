@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { TrendUp, Sparkle, Rocket, ChartLineUp } from '@phosphor-icons/react'
 import { Avatar } from '../components/Avatar'
 import { TokenDrawer } from '../components/TokenDrawer'
+import { Usd, Pct, Count, LiveAge } from '../components/Nums'
+import { dexLabel } from '../lib/dex'
 
 // The RH-Chain-native terminal. Chain-wide across every pad/DEX (via /api/trenches,
 // composed from GeckoTerminal), ranked wash-resistant. GMGN doesn't have RH as a
@@ -36,31 +38,18 @@ const FEEDS: { id: Feed; label: string; Ico: typeof TrendUp }[] = [
   { id: 'top', label: 'Top', Ico: Rocket },
 ]
 
-function usd(v: number): string {
-  if (!isFinite(v) || v <= 0) return '—'
-  if (v >= 1e9) return `$${(v / 1e9).toFixed(2)}B`
-  if (v >= 1e6) return `$${(v / 1e6).toFixed(2)}M`
-  if (v >= 1e3) return `$${(v / 1e3).toFixed(1)}K`
-  if (v >= 1) return `$${v.toFixed(2)}`
-  if (v > 0) return `$${v.toPrecision(2)}`
-  return '—'
-}
-function age(ts: number): string {
-  if (!ts) return '—'
-  const s = Math.max(0, Math.floor(Date.now() / 1000) - ts)
-  if (s < 60) return `${s}s`
-  if (s < 3600) return `${Math.floor(s / 60)}m`
-  if (s < 86400) return `${Math.floor(s / 3600)}h`
-  return `${Math.floor(s / 86400)}d`
-}
-const pct = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(v > -100 && v < 100 ? 1 : 0)}%`
-
 export function Trenches() {
   const [feed, setFeed] = useState<Feed>('trending')
   const [coins, setCoins] = useState<Coin[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
   const [sel, setSel] = useState<Coin | null>(null)
+  // Shared clock so every row's age ticks together, once a second.
+  const [now, setNow] = useState(() => Math.floor(Date.now() / 1000))
+  useEffect(() => {
+    const id = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 1000)
+    return () => clearInterval(id)
+  }, [])
 
   const load = useCallback(async (f: Feed) => {
     setLoading(true); setErr(null)
@@ -135,18 +124,18 @@ export function Trenches() {
             <span className="tc-tok">
               <Avatar className="tc-img" image={c.image ?? undefined} symbol={c.symbol} addr={c.address} />
               <span className="tc-toktext">
-                <span className="tc-sym">{c.symbol}{age(c.createdTs) && Date.now() / 1000 - c.createdTs < 3600 && <em className="tc-fresh">NEW</em>}</span>
-                <span className="tc-name">{c.name}</span>
+                <span className="tc-sym">{c.symbol}{c.createdTs > 0 && now - c.createdTs < 3600 && <em className="tc-fresh">NEW</em>}</span>
+                <span className="tc-name"><span className="tc-pad">{dexLabel(c.dex)}</span>{c.name}</span>
               </span>
             </span>
-            <span className="tc-num num">{usd(c.priceUsd)}</span>
-            <span className={`tc-num num ${c.chg1h >= 0 ? 'up' : 'down'}`}>{pct(c.chg1h)}</span>
-            <span className={`tc-num num ${c.chg24 >= 0 ? 'up' : 'down'}`}>{pct(c.chg24)}</span>
-            <span className="tc-num num">{usd(c.fdvUsd)}</span>
-            <span className="tc-num num">{usd(c.vol24)}</span>
-            <span className={`tc-num num ${c.liqUsd < 2000 ? 'warn' : ''}`}>{usd(c.liqUsd)}</span>
-            <span className="tc-num num tc-flow"><b className="up">{c.buys24}</b>/<b className="down">{c.sells24}</b></span>
-            <span className="tc-num num tc-age">{age(c.createdTs)}</span>
+            <span className="tc-num num"><Usd v={c.priceUsd} /></span>
+            <span className={`tc-num num ${c.chg1h >= 0 ? 'up' : 'down'}`}><Pct v={c.chg1h} /></span>
+            <span className={`tc-num num ${c.chg24 >= 0 ? 'up' : 'down'}`}><Pct v={c.chg24} /></span>
+            <span className="tc-num num"><Usd v={c.fdvUsd} /></span>
+            <span className="tc-num num"><Usd v={c.vol24} /></span>
+            <span className={`tc-num num ${c.liqUsd < 2000 ? 'warn' : ''}`}><Usd v={c.liqUsd} /></span>
+            <span className="tc-num num tc-flow"><b className="up"><Count v={c.buys24} /></b>/<b className="down"><Count v={c.sells24} /></b></span>
+            <span className="tc-num num tc-age"><LiveAge createdTs={c.createdTs} now={now} /></span>
           </div>
         ))}
       </div>

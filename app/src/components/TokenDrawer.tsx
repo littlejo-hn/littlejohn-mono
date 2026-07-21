@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { ArrowSquareOut, X } from '@phosphor-icons/react'
 import { Avatar } from './Avatar'
 import { TerminalTrade } from './TerminalTrade'
+import { dexLabel } from '../lib/dex'
 
 // The token this drawer trades — a structural subset of the terminal's Coin.
 export type DrawerCoin = {
@@ -13,15 +14,6 @@ export type DrawerCoin = {
   dex: string
   priceUsd: number
   chg24: number
-}
-
-const DEX_LABEL: Record<string, string> = {
-  'uniswap-v2-robinhood': 'Uniswap V2',
-  'uniswap-v3-robinhood': 'Uniswap V3',
-  'uniswap-v4-robinhood': 'Uniswap V4',
-  'pancakeswap-v3-robinhood': 'PancakeSwap V3',
-  'pancakeswap-v2-robinhood': 'PancakeSwap V2',
-  robinswap: 'RobinSwap',
 }
 
 function price(v: number): string {
@@ -43,7 +35,7 @@ export function TokenDrawer({ coin, onClose }: { coin: DrawerCoin | null; onClos
 
   if (!coin) return null
   const tradeable = coin.dex === 'uniswap-v2-robinhood' || coin.dex === 'uniswap-v3-robinhood'
-  const dexLabel = DEX_LABEL[coin.dex] ?? coin.dex
+  const dexName = dexLabel(coin.dex)
   const chart = `https://dexscreener.com/robinhood/${coin.pool}`
   const explorer = `https://robinhoodchain.blockscout.com/token/${coin.address}`
 
@@ -62,7 +54,7 @@ export function TokenDrawer({ coin, onClose }: { coin: DrawerCoin | null; onClos
         </div>
 
         <div className="drawer-links">
-          <span className="drawer-dex">{dexLabel}</span>
+          <span className="drawer-dex">{dexName}</span>
           <a href={chart} target="_blank" rel="noopener noreferrer">Chart <ArrowSquareOut size={12} /></a>
           <a href={explorer} target="_blank" rel="noopener noreferrer">Explorer <ArrowSquareOut size={12} /></a>
         </div>
@@ -71,8 +63,8 @@ export function TokenDrawer({ coin, onClose }: { coin: DrawerCoin | null; onClos
           <TerminalTrade token={{ address: coin.address, pool: coin.pool, symbol: coin.symbol, dex: coin.dex, priceUsd: coin.priceUsd }} />
         ) : (
           <div className="drawer-ext">
-            <p>Inline trading covers <b>Uniswap V2 & V3</b> for now. <b>{coin.symbol}</b> trades on <b>{dexLabel}</b> — V4 routing is next.</p>
-            <a className="tt-go" href={chart} target="_blank" rel="noopener noreferrer">Trade on {dexLabel} <ArrowSquareOut size={14} /></a>
+            <p>Inline trading covers <b>Uniswap V2 & V3</b> for now. <b>{coin.symbol}</b> trades on <b>{dexName}</b> — V4 routing is next.</p>
+            <a className="tt-go" href={chart} target="_blank" rel="noopener noreferrer">Trade on {dexName} <ArrowSquareOut size={14} /></a>
           </div>
         )}
       </aside>

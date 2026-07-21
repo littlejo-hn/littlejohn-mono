@@ -588,3 +588,7 @@ nav.tabs button.active{background:var(--surface-2);color:var(--ink)}
 .tt-go.warn{background:#e8b64a;color:#3a2a06}
 .tt-err{color:var(--down);font-size:.78rem;word-break:break-word}
 .tt-foot{color:var(--faint);font-size:.7rem;text-align:center;margin-top:.2rem}
+
+/* Launchpad/venue pill on terminal rows + NumberFlow cell alignment */
+.tc-pad{display:inline-block;font-size:.6rem;font-weight:700;letter-spacing:.01em;color:var(--dim);background:var(--surface-2);border:1px solid var(--line);border-radius:4px;padding:.02rem .28rem;margin-right:.35rem;vertical-align:1px;text-transform:none}
+.tc-num number-flow-react{justify-content:flex-end}
