@@ -99,6 +99,59 @@ async function gtSearch(q: string): Promise<{ data: any[]; toks: Record<string, 
   return { data: j.data ?? [], toks }
 }
 
+// Robinhood tokenized stocks — USD-priced, USDG-paired, and calm-volume, so they never
+// surface in the memecoin volume feed. Curated by address; the "Stocks" tab pulls their
+// price / 24h change / liquidity from GeckoTerminal's multi-token endpoint in one call.
+const STOCKS: string[] = [
+  '0xaf3d76f1834a1d425780943c99ea8a608f8a93f9', // AAPL
+  '0xe93237c50d904957cf27e7b1133b510c669c2e74', // MSFT
+  '0xd0601ce157db5bdc3162bbac2a2c8af5320d9eec', // NVDA
+  '0x322f0929c4625ed5bad873c95208d54e1c003b2d', // TSLA
+  '0x12f190a9f9d7d37a250758b26824b97ce941bf54', // AMZN
+]
+const cleanStockName = (n: string) => n.replace(/\s*\(Robinhood Tokenized Stock\)\s*/i, '').trim()
+
+// A tokenized-stock token node + its top pool -> a terminal card (price already in USD).
+function mapStock(t: any, pools: Record<string, any>, pdex: Record<string, string>): Card | null {
+  const a = t.attributes ?? {}
+  const address = a.address
+  if (!address) return null
+  const pid = (t.relationships?.top_pools?.data ?? [])[0]?.id
+  const pa = pid ? pools[pid] ?? {} : {}
+  const tx = pa.transactions?.h24 ?? {}
+  return {
+    pool: String(pid ?? '').replace(/^robinhood_/, ''),
+    address,
+    symbol: (a.symbol ?? '?').toUpperCase(),
+    name: cleanStockName(a.name ?? a.symbol ?? ''),
+    image: a.image_url && a.image_url !== 'missing.png' ? a.image_url : null,
+    dex: pid ? pdex[pid] ?? '' : '',
+    priceUsd: num(a.price_usd),
+    fdvUsd: num(a.fdv_usd),
+    liqUsd: num(pa.reserve_in_usd),
+    vol24: num(pa.volume_usd?.h24),
+    vol1h: num(pa.volume_usd?.h1),
+    chg24: num(pa.price_change_percentage?.h24),
+    chg1h: num(pa.price_change_percentage?.h1),
+    buys24: num(tx.buys),
+    sells24: num(tx.sells),
+    buyers24: num(tx.buyers),
+    sellers24: num(tx.sellers),
+    createdTs: 0,
+    score: num(pa.reserve_in_usd),
+  }
+}
+
+async function gtStocks(): Promise<Card[]> {
+  const res = await fetch(`${GT}/tokens/multi/${STOCKS.join(',')}?include=top_pools`, { headers: HEADERS, signal: AbortSignal.timeout(8000) })
+  if (!res.ok) throw new Error(`geckoterminal ${res.status}`)
+  const j = (await res.json()) as any
+  const pools: Record<string, any> = {}
+  const pdex: Record<string, string> = {}
+  for (const i of j.included ?? []) if (i.type === 'pool') { pools[i.id] = i.attributes; pdex[i.id] = i.relationships?.dex?.data?.id ?? '' }
+  return (j.data ?? []).map((t: any) => mapStock(t, pools, pdex)).filter((c: Card | null): c is Card => !!c).sort((a, b) => b.liqUsd - a.liqUsd)
+}
+
 const FRESH_MS = 45_000 // refetch GeckoTerminal at most this often per feed
 const STALE_MS = 600_000 // serve last-good up to 10 min on upstream failure
 
@@ -124,7 +177,9 @@ export const onRequestGet: PagesFunction = async (ctx) => {
 
   try {
     let cards: Card[]
-    if (feed === 'search') {
+    if (feed === 'stocks') {
+      cards = await gtStocks()
+    } else if (feed === 'search') {
       const { data, toks } = await gtSearch(q)
       const byTok = new Map<string, Card>()
       for (const c of data.map((p) => mapPool(p, toks)).filter((c): c is Card => !!c)) {

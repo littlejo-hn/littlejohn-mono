@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { TrendUp, Sparkle, Rocket, ChartLineUp } from '@phosphor-icons/react'
+import { TrendUp, Sparkle, Rocket, ChartLineUp, Buildings } from '@phosphor-icons/react'
 import { Avatar } from '../components/Avatar'
 import { TokenDrawer } from '../components/TokenDrawer'
 import { Usd, Pct, Count, LiveAge } from '../components/Nums'
@@ -31,12 +31,13 @@ type Coin = {
   createdTs: number
 }
 
-type Feed = 'trending' | 'new' | 'gainers' | 'top'
+type Feed = 'trending' | 'new' | 'gainers' | 'top' | 'stocks'
 const FEEDS: { id: Feed; label: string; Ico: typeof TrendUp }[] = [
   { id: 'trending', label: 'Trending', Ico: TrendUp },
   { id: 'new', label: 'New', Ico: Sparkle },
   { id: 'gainers', label: 'Gainers', Ico: ChartLineUp },
   { id: 'top', label: 'Top', Ico: Rocket },
+  { id: 'stocks', label: 'Stocks', Ico: Buildings },
 ]
 
 export function Trenches() {
@@ -161,6 +162,8 @@ export function Trenches() {
       </div>
       <div className="term-foot">{feed === 'new'
         ? 'Live from chain · new pools appear ~1 block (~0.1s) after creation, straight from the Uniswap V2/V3/V4 factories · not financial advice'
+        : feed === 'stocks'
+        ? 'Robinhood tokenized stocks · USD price + 24h move via GeckoTerminal · not investment advice'
         : 'Data via GeckoTerminal · trending ranked by unique buyers, not raw volume · not financial advice'}</div>
       <TokenDrawer coin={sel} onClose={closeDrawer} />
     </div>
