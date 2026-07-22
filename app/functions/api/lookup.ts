@@ -27,7 +27,17 @@ const decimalsAbi = parseAbiItem('function decimals() view returns (uint8)')
 const balanceOfAbi = parseAbiItem('function balanceOf(address) view returns (uint256)')
 const getPairAbi = parseAbiItem('function getPair(address,address) view returns (address)')
 const getPoolAbi = parseAbiItem('function getPool(address,address,uint24) view returns (address)')
+const logoAbi = parseAbiItem('function logo() view returns (string)')
 const num = (v: bigint, dec: number) => Number(v) / 10 ** dec
+
+function imgFromUri(uri: string | undefined | null): string | null {
+  if (!uri) return null
+  const s = uri.trim()
+  if (s.startsWith('ipfs://')) return `https://ipfs.io/ipfs/${s.slice(7).replace(/^ipfs\//, '')}`
+  if (s.startsWith('https://')) return s
+  if (/^(baf[a-z0-9]{20,}|Qm[a-zA-Z0-9]{44})$/.test(s)) return `https://ipfs.io/ipfs/${s}`
+  return null
+}
 
 const FRESH_MS = 20_000
 
@@ -54,7 +64,7 @@ async function resolve(T: Address) {
     { address: USDG, abi: [decimalsAbi], functionName: 'decimals' },
     { address: T, abi: [symbolAbi], functionName: 'symbol' },
     { address: T, abi: [nameAbi], functionName: 'name' },
-    { address: T, abi: [decimalsAbi], functionName: 'decimals' },
+    { address: T, abi: [logoAbi], functionName: 'logo' },
     ...pools.map((p) => ({ address: WETH, abi: [balanceOfAbi], functionName: 'balanceOf', args: [p.pool] as const })),
   ] })
   const symbol = res[3].result as string | undefined
@@ -72,7 +82,8 @@ async function resolve(T: Address) {
   })
 
   return {
-    pool: best.pool, address: T, symbol, name: (res[4].result as string) || symbol, image: null, dex: best.dex,
+    pool: best.pool, address: T, symbol, name: (res[4].result as string) || symbol,
+    image: imgFromUri(res[5].result as string | undefined), dex: best.dex,
     priceUsd: 0, fdvUsd: 0, liqUsd: 2 * bestWeth * ethUsd, vol24: 0, vol1h: 0, chg24: 0, chg1h: 0,
     buys24: 0, sells24: 0, buyers24: 0, sellers24: 0, createdTs: 0, score: 0,
   }

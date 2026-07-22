@@ -42,8 +42,20 @@ const nameAbi = parseAbiItem('function name() view returns (string)')
 const decimalsAbi = parseAbiItem('function decimals() view returns (uint8)')
 const balanceOfAbi = parseAbiItem('function balanceOf(address) view returns (uint256)')
 const getLiquidityAbi = parseAbiItem('function getLiquidity(bytes32 poolId) view returns (uint128)')
+const logoAbi = parseAbiItem('function logo() view returns (string)') // launchpad tokens (Pons et al.) carry their logo on-chain
 const num = (v: bigint, dec: number) => Number(v) / 10 ** dec
 const Q96 = 2n ** 96n
+
+// Resolve an on-chain image URI to an <img>-loadable URL (ipfs:// -> gateway, which
+// the CSP already allows). Returns null for anything we can't safely load.
+function imgFromUri(uri: string | undefined | null): string | null {
+  if (!uri) return null
+  const s = uri.trim()
+  if (s.startsWith('ipfs://')) return `https://ipfs.io/ipfs/${s.slice(7).replace(/^ipfs\//, '')}`
+  if (s.startsWith('https://')) return s
+  if (/^(baf[a-z0-9]{20,}|Qm[a-zA-Z0-9]{44})$/.test(s)) return `https://ipfs.io/ipfs/${s}` // bare CID
+  return null
+}
 
 type Card = {
   pool: string; address: string; symbol: string; name: string; image: string | null; dex: string
@@ -115,7 +127,7 @@ async function build(): Promise<Card[]> {
   const perCand = picked.flatMap((c) => [
     { address: c.token, abi: [symbolAbi], functionName: 'symbol' },
     { address: c.token, abi: [nameAbi], functionName: 'name' },
-    { address: c.token, abi: [decimalsAbi], functionName: 'decimals' },
+    { address: c.token, abi: [logoAbi], functionName: 'logo' }, // on-chain image if the pad stores one
     c.kind === 'v4'
       ? { address: V4_STATE_VIEW, abi: [getLiquidityAbi], functionName: 'getLiquidity', args: [c.pool as `0x${string}`] }
       : { address: c.quote, abi: [balanceOfAbi], functionName: 'balanceOf', args: [c.pool as Address] },
@@ -133,6 +145,7 @@ async function build(): Promise<Card[]> {
     const b = 3 + i * 4
     const symbol = res[b].result as string | undefined
     const name = res[b + 1].result as string | undefined
+    const logo = res[b + 2].result as string | undefined
     const liq = res[b + 3].result as bigint | undefined
     if (!symbol || liq == null) continue
     const isUsdg = c.quote.toLowerCase() === USDG.toLowerCase()
@@ -150,7 +163,7 @@ async function build(): Promise<Card[]> {
     const liqUsd = 2 * num(qReserveWei, quoteDec) * quotePrice
     if (!(liqUsd >= MIN_LIQ)) continue
     cards.push({
-      pool: c.pool, address: c.token, symbol, name: name || symbol, image: null, dex: c.dex,
+      pool: c.pool, address: c.token, symbol, name: name || symbol, image: imgFromUri(logo), dex: c.dex,
       priceUsd: 0, fdvUsd: 0, liqUsd, vol24: 0, vol1h: 0, chg24: 0, chg1h: 0,
       buys24: 0, sells24: 0, buyers24: 0, sellers24: 0,
       createdTs: anchorTs - Math.round(Number(latest - c.block) * BLOCK_S),
