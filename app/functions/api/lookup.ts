@@ -5,6 +5,7 @@
 // equivalent) — the token need not be on the board or indexed anywhere.
 import { createPublicClient, http, parseAbiItem, type Address } from 'viem'
 import { json } from './_ponder'
+import { indexTokens } from './_index'
 
 const RPC = 'https://rpc.mainnet.chain.robinhood.com'
 const ZERO = '0x0000000000000000000000000000000000000000'
@@ -89,7 +90,7 @@ async function resolve(T: Address) {
   }
 }
 
-export const onRequestGet: PagesFunction = async (ctx) => {
+export const onRequestGet: PagesFunction<{ DB: D1Database }> = async (ctx) => {
   const addr = (new URL(ctx.request.url).searchParams.get('addr') ?? '').trim().toLowerCase()
   if (!/^0x[0-9a-f]{40}$/.test(addr)) return json({ token: null })
 
@@ -104,7 +105,10 @@ export const onRequestGet: PagesFunction = async (ctx) => {
     const token = await resolve(addr as Address)
     const resp = json({ token })
     resp.headers.set('x-fetched-at', String(Date.now()))
-    if (token) ctx.waitUntil(cache.put(key, resp.clone()))
+    if (token) {
+      ctx.waitUntil(cache.put(key, resp.clone()))
+      if (ctx.env?.DB) ctx.waitUntil(indexTokens(ctx.env.DB, [token])) // a looked-up token joins the index
+    }
     return resp
   } catch (e) {
     if (cached) return cached

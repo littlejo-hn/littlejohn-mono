@@ -61,16 +61,23 @@ export function SearchModal({
     if (!s) { setResults([]); setLoading(false); setErrored(false); return }
     let off = false
     setLoading(true); setErrored(false)
-    const t = setTimeout(() => {
-      const url = isAddr(s) ? `/api/lookup?addr=${s}` : `/api/trenches?feed=search&q=${encodeURIComponent(s)}`
-      fetch(url)
-        .then((r) => { if (!r.ok && !isAddr(s)) throw new Error('search-unavailable'); return r.ok ? r.json() : null })
-        .then((d) => {
-          if (off) return
-          const items = isAddr(s) ? (d?.token ? [d.token] : []) : (d?.tokens ?? [])
-          setResults(items as Coin[]); setHi(0); setLoading(false)
-        })
-        .catch(() => { if (!off) { setErrored(true); setResults([]); setLoading(false) } })
+    const t = setTimeout(async () => {
+      try {
+        // Our own index first (reliable — name + already-seen addresses).
+        let items: Coin[] = []
+        const r = await fetch(`/api/tokens?q=${encodeURIComponent(s)}`)
+        if (r.ok) items = ((await r.json())?.tokens ?? []) as Coin[]
+        // An address we haven't indexed yet -> resolve on-chain (server-side it also
+        // joins the index, so next time it's instant).
+        if (!items.length && isAddr(s)) {
+          const r2 = await fetch(`/api/lookup?addr=${s}`)
+          if (r2.ok) { const tok = (await r2.json())?.token; if (tok) items = [tok as Coin] }
+        }
+        if (off) return
+        setResults(items); setHi(0); setLoading(false)
+      } catch {
+        if (!off) { setErrored(true); setResults([]); setLoading(false) }
+      }
     }, 200)
     return () => { off = true; clearTimeout(t) }
   }, [q])
@@ -114,8 +121,8 @@ export function SearchModal({
               {!q.trim()
                 ? 'Nothing in the trenches yet.'
                 : errored
-                  ? 'Name search is rate-limited right now — paste a token address to reach any token.'
-                  : isAddr(q.trim()) ? 'No WETH pool found for that address.' : `No token matches “${q.trim()}”.`}
+                  ? 'Search hiccup — try again.'
+                  : isAddr(q.trim()) ? 'No WETH pool found for that address.' : `No token indexed for “${q.trim()}” yet — try the address.`}
             </div>
           )}
           {list.map((c, i) => (

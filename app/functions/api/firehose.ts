@@ -7,6 +7,7 @@
 // venues added next. Cache-through + serve-stale so RH's RPC is hit rarely.
 import { createPublicClient, http, parseAbiItem, type Address } from 'viem'
 import { json } from './_ponder'
+import { indexTokens } from './_index'
 
 const RPC = 'https://rpc.mainnet.chain.robinhood.com'
 const ZERO = '0x0000000000000000000000000000000000000000' as Address // native ETH in V4
@@ -176,7 +177,7 @@ async function build(): Promise<Card[]> {
 const FRESH_MS = 4_000 // refetch the chain at most this often
 const STALE_MS = 120_000 // serve last-good up to 2 min on RPC failure
 
-export const onRequestGet: PagesFunction = async (ctx) => {
+export const onRequestGet: PagesFunction<{ DB: D1Database }> = async (ctx) => {
   const cache = (caches as unknown as { default: Cache }).default
   const key = new Request('https://firehose.cache/new', { method: 'GET' })
   const cached = await cache.match(key)
@@ -190,6 +191,8 @@ export const onRequestGet: PagesFunction = async (ctx) => {
     resp.headers.set('cache-control', `public, s-maxage=${Math.floor(STALE_MS / 1000)}`)
     resp.headers.set('x-fetched-at', String(Date.now()))
     ctx.waitUntil(cache.put(key, resp.clone()))
+    // Persist every discovered token to our chain-wide index (resolve-once model).
+    if (ctx.env?.DB && cards.length) ctx.waitUntil(indexTokens(ctx.env.DB, cards))
     return resp
   } catch (e) {
     if (cached) return cached // serve-stale on RPC hiccup so the feed never blanks
