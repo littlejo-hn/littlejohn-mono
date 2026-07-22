@@ -100,14 +100,32 @@ async function gtSearch(q: string): Promise<{ data: any[]; toks: Record<string, 
 }
 
 // Robinhood tokenized stocks — USD-priced, USDG-paired, and calm-volume, so they never
-// surface in the memecoin volume feed. Curated by address; the "Stocks" tab pulls their
+// surface in the memecoin volume feed. All 102 are minted by one on-chain factory
+// (0x4783C67b63dE2B358Ac5951a7D41F47A38F3C046, event Deployed(bytes32,address,string,
+// string)) which we could enumerate for the full catalog — but most have thin/junk
+// pools that return garbage prices, so we curate the verified-liquid set here and pull
 // price / 24h change / liquidity from GeckoTerminal's multi-token endpoint in one call.
 const STOCKS: string[] = [
-  '0xaf3d76f1834a1d425780943c99ea8a608f8a93f9', // AAPL
-  '0xe93237c50d904957cf27e7b1133b510c669c2e74', // MSFT
   '0xd0601ce157db5bdc3162bbac2a2c8af5320d9eec', // NVDA
-  '0x322f0929c4625ed5bad873c95208d54e1c003b2d', // TSLA
+  '0xe93237c50d904957cf27e7b1133b510c669c2e74', // MSFT
+  '0xaf3d76f1834a1d425780943c99ea8a608f8a93f9', // AAPL
+  '0x2e0847e8910a9732eb3fb1bb4b70a580adad4fe3', // GOOGL
   '0x12f190a9f9d7d37a250758b26824b97ce941bf54', // AMZN
+  '0xc0d6457c16cc70d6790dd43521c899c87ce02f35', // META
+  '0x322f0929c4625ed5bad873c95208d54e1c003b2d', // TSLA
+  '0x86923f96303d656e4aa86d9d42d1e57ad2023fdc', // AMD
+  '0xe0444ef8bf4ed74f74fd73686e2ddf4c1c5591e8', // NFLX
+  '0xb0992820e760d836549ba69bc7598b4af75dee03', // ORCL
+  '0xff080c8ce2e5feadaca0da81314ae59d232d4afd', // MU
+  '0xc72b96e0e48ecd4dc75e1e45396e26300bc39681', // INTC
+  '0x58ffe4a942d3885baa22d7520691f611ef09e7aa', // TSM
+  '0x894e1ec2d74ffe5aef8dc8a9e84686accb964f2a', // PLTR
+  '0x941ae714ec6d8130c7b75d67160ca08f1e7d11dd', // DELL
+  '0x117cc2133c37b721f49de2a7a74833232b3b4c0c', // SPY
+  '0xd5f3879160bc7c32ebb4dc785f8a4f505888de68', // QQQ
+  '0x411efb0e7f985935daec3d4c3ebaea0d0ad7d89f', // SLV
+  '0xa30fa36db767ad9ed3f7a60fc79526fb4d56d344', // USO
+  '0x4a0e65a3eccec6dbe60ae065f2e7bb85fae35eea', // SPCX (SpaceX, pre-IPO)
 ]
 const cleanStockName = (n: string) => n.replace(/\s*\(Robinhood Tokenized Stock\)\s*/i, '').trim()
 
@@ -149,7 +167,9 @@ async function gtStocks(): Promise<Card[]> {
   const pools: Record<string, any> = {}
   const pdex: Record<string, string> = {}
   for (const i of j.included ?? []) if (i.type === 'pool') { pools[i.id] = i.attributes; pdex[i.id] = i.relationships?.dex?.data?.id ?? '' }
-  return (j.data ?? []).map((t: any) => mapStock(t, pools, pdex)).filter((c: Card | null): c is Card => !!c).sort((a, b) => b.liqUsd - a.liqUsd)
+  return (j.data ?? []).map((t: any) => mapStock(t, pools, pdex))
+    .filter((c: Card | null): c is Card => !!c && c.liqUsd >= 500) // drop thin/junk-price pools
+    .sort((a, b) => b.liqUsd - a.liqUsd)
 }
 
 const FRESH_MS = 45_000 // refetch GeckoTerminal at most this often per feed
