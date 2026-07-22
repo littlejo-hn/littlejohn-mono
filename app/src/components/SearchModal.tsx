@@ -1,36 +1,28 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { MagnifyingGlass } from '@phosphor-icons/react'
+import { Avatar } from './Avatar'
+import { dexLabel } from '../lib/dex'
 
+// Chain-wide token search: any RH token by ticker / name / address, not just what's on
+// the board. An address resolves on-chain (/api/lookup — reliable, no GeckoTerminal);
+// a name/ticker goes through the GeckoTerminal-backed search. Selecting opens the
+// token's trade drawer on the terminal (via ?token=).
 type Coin = {
   address: string
   symbol: string
   name: string | null
   image: string | null
-  mcap: number | null
-  graduated: boolean
-  tokens_sold: string | null
-  vol_eth: number
+  dex: string
+  liqUsd: number
 }
 
-const CURVE_SUPPLY_WHOLE = 793_100_000
+const isAddr = (s: string) => /^0x[0-9a-f]{40}$/i.test(s)
 const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`
-
-// mcap is ETH-denominated on Robinhood Chain; show it in Ξ (our own thing, not $).
-function fmtEth(v: number | null): string {
-  if (!v || v <= 0) return '—'
-  if (v >= 1000) return `Ξ${(v / 1000).toFixed(1)}K`
-  if (v >= 1) return `Ξ${v.toFixed(1)}`
-  if (v >= 0.001) return `Ξ${v.toFixed(3)}`
-  return `Ξ${v.toExponential(1)}`
-}
-
-function curvePct(c: Coin): number {
-  if (c.graduated || !c.tokens_sold) return 100
-  try {
-    return Math.min(100, (Number(BigInt(c.tokens_sold) / 10n ** 18n) / CURVE_SUPPLY_WHOLE) * 100)
-  } catch {
-    return 0
-  }
+function usd(v: number): string {
+  if (!isFinite(v) || v <= 0) return '—'
+  if (v >= 1e6) return `$${(v / 1e6).toFixed(1)}M`
+  if (v >= 1e3) return `$${(v / 1e3).toFixed(1)}K`
+  return `$${v.toFixed(0)}`
 }
 
 export function SearchModal({
@@ -46,16 +38,16 @@ export function SearchModal({
   const [results, setResults] = useState<Coin[]>([])
   const [q, setQ] = useState('')
   const [hi, setHi] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [errored, setErrored] = useState(false) // GT name-search rate-limited
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Hot coins (top by volume) for the empty state; loaded once per open.
+  // Trending coins for the empty state; loaded once per open.
   useEffect(() => {
     if (!open) return
-    setQ('')
-    setHi(0)
-    setResults([])
+    setQ(''); setHi(0); setResults([])
     let off = false
-    fetch('/api/board?sort=volume&limit=8')
+    fetch('/api/trenches?feed=trending')
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => { if (!off && d?.tokens) setHot(d.tokens as Coin[]) })
       .catch(() => {})
@@ -63,23 +55,28 @@ export function SearchModal({
     return () => { off = true; clearTimeout(t) }
   }, [open])
 
-  // Server-side search across ALL coins (ticker / name / address / creator), debounced.
+  // Chain-wide search, debounced. Address -> on-chain resolve; else -> GT search.
   useEffect(() => {
     const s = q.trim()
-    if (!s) { setResults([]); return }
+    if (!s) { setResults([]); setLoading(false); setErrored(false); return }
     let off = false
+    setLoading(true); setErrored(false)
     const t = setTimeout(() => {
-      fetch(`/api/search?q=${encodeURIComponent(s)}`)
-        .then((r) => (r.ok ? r.json() : null))
-        .then((d) => { if (!off && d?.coins) { setResults(d.coins as Coin[]); setHi(0) } })
-        .catch(() => {})
-    }, 160)
+      const url = isAddr(s) ? `/api/lookup?addr=${s}` : `/api/trenches?feed=search&q=${encodeURIComponent(s)}`
+      fetch(url)
+        .then((r) => { if (!r.ok && !isAddr(s)) throw new Error('search-unavailable'); return r.ok ? r.json() : null })
+        .then((d) => {
+          if (off) return
+          const items = isAddr(s) ? (d?.token ? [d.token] : []) : (d?.tokens ?? [])
+          setResults(items as Coin[]); setHi(0); setLoading(false)
+        })
+        .catch(() => { if (!off) { setErrored(true); setResults([]); setLoading(false) } })
+    }, 200)
     return () => { off = true; clearTimeout(t) }
   }, [q])
 
   const showHot = !q.trim()
   const list = showHot ? hot.slice(0, 7) : results
-
   const choose = useCallback((c: Coin) => onSelect(c.address), [onSelect])
 
   useEffect(() => {
@@ -105,46 +102,41 @@ export function SearchModal({
             ref={inputRef}
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search coins, tickers, addresses…"
+            placeholder="Search any token — ticker, name, or address…"
             aria-label="Search coins"
           />
         </div>
 
-        <div className="cmdk-section">{showHot ? 'Hot in the trenches' : 'Results'}</div>
+        <div className="cmdk-section">{showHot ? 'Trending' : loading ? 'Searching…' : 'Results'}</div>
         <div className="cmdk-list">
-          {list.length === 0 && (
-            <div className="cmdk-empty">{q.trim() ? `No coins match “${q.trim()}”.` : 'Nothing in the trenches yet.'}</div>
+          {list.length === 0 && !loading && (
+            <div className="cmdk-empty">
+              {!q.trim()
+                ? 'Nothing in the trenches yet.'
+                : errored
+                  ? 'Name search is rate-limited right now — paste a token address to reach any token.'
+                  : isAddr(q.trim()) ? 'No WETH pool found for that address.' : `No token matches “${q.trim()}”.`}
+            </div>
           )}
-          {list.map((c, i) => {
-            const pct = curvePct(c)
-            return (
-              <button
-                key={c.address}
-                className={`cmdk-row ${i === hi ? 'hi' : ''}`}
-                onMouseEnter={() => setHi(i)}
-                onClick={() => choose(c)}
-              >
-                {showHot && <span className={`cmdk-rank ${i < 3 ? 'top' : ''}`}>{i + 1}</span>}
-                <span className="cmdk-av">
-                  {c.image ? <img src={c.image} alt="" /> : <span className="cmdk-av-ph">{(c.symbol || '?')[0]}</span>}
-                </span>
-                <span className="cmdk-meta">
-                  <span className="cmdk-sym">{c.symbol}</span>
-                  <span className="cmdk-name">{c.name ?? short(c.address)}</span>
-                </span>
-                <span className="cmdk-right">
-                  <span className="cmdk-mcap num">{fmtEth(c.mcap)}</span>
-                  {c.graduated ? (
-                    <span className="cmdk-tag grad">Graduated</span>
-                  ) : (
-                    <span className="cmdk-prog" title={`${Math.round(pct)}% to the getaway`}>
-                      <span style={{ width: `${pct}%` }} />
-                    </span>
-                  )}
-                </span>
-              </button>
-            )
-          })}
+          {list.map((c, i) => (
+            <button
+              key={c.address}
+              className={`cmdk-row ${i === hi ? 'hi' : ''}`}
+              onMouseEnter={() => setHi(i)}
+              onClick={() => choose(c)}
+            >
+              {showHot && <span className={`cmdk-rank ${i < 3 ? 'top' : ''}`}>{i + 1}</span>}
+              <Avatar className="cmdk-av" image={c.image ?? undefined} symbol={c.symbol} addr={c.address} />
+              <span className="cmdk-meta">
+                <span className="cmdk-sym">{c.symbol}</span>
+                <span className="cmdk-name">{c.name ?? short(c.address)}</span>
+              </span>
+              <span className="cmdk-right">
+                <span className="cmdk-mcap num">{usd(c.liqUsd)}</span>
+                {c.dex && <span className="cmdk-tag">{dexLabel(c.dex)}</span>}
+              </span>
+            </button>
+          ))}
         </div>
 
         <div className="cmdk-foot">

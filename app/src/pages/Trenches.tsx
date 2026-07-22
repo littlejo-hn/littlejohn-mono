@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { TrendUp, Sparkle, Rocket, ChartLineUp } from '@phosphor-icons/react'
 import { Avatar } from '../components/Avatar'
 import { TokenDrawer } from '../components/TokenDrawer'
@@ -44,12 +45,31 @@ export function Trenches() {
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
   const [sel, setSel] = useState<Coin | null>(null)
+  const [params, setParams] = useSearchParams()
   // Shared clock so every row's age ticks together, once a second.
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000))
   useEffect(() => {
     const id = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 1000)
     return () => clearInterval(id)
   }, [])
+
+  // Deep-link: ?token=0x… opens the trade drawer for ANY token (resolved on-chain),
+  // so any token is reachable by URL even if it's not on the board.
+  useEffect(() => {
+    const addr = params.get('token')
+    if (!addr || !/^0x[0-9a-f]{40}$/i.test(addr)) return
+    let off = false
+    fetch(`/api/lookup?addr=${addr}`)
+      .then((r) => r.json())
+      .then((d) => { if (!off && d?.token) setSel(d.token as Coin) })
+      .catch(() => {})
+    return () => { off = true }
+  }, [params])
+
+  const closeDrawer = useCallback(() => {
+    setSel(null)
+    if (params.get('token')) { params.delete('token'); setParams(params, { replace: true }) }
+  }, [params, setParams])
 
   const load = useCallback(async (f: Feed) => {
     setLoading(true); setErr(null)
@@ -142,7 +162,7 @@ export function Trenches() {
       <div className="term-foot">{feed === 'new'
         ? 'Live from chain · new pools appear ~1 block (~0.1s) after creation, straight from the Uniswap V2/V3/V4 factories · not financial advice'
         : 'Data via GeckoTerminal · trending ranked by unique buyers, not raw volume · not financial advice'}</div>
-      <TokenDrawer coin={sel} onClose={() => setSel(null)} />
+      <TokenDrawer coin={sel} onClose={closeDrawer} />
     </div>
   )
 }

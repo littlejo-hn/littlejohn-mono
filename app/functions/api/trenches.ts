@@ -8,7 +8,8 @@
 
 import { json } from './_ponder'
 
-const GT = 'https://api.geckoterminal.com/api/v2/networks/robinhood'
+const GT_BASE = 'https://api.geckoterminal.com/api/v2'
+const GT = `${GT_BASE}/networks/robinhood`
 const HEADERS = { 'user-agent': 'littlejohn-terminal/1', accept: 'application/json' }
 
 const num = (v: unknown): number => {
@@ -87,6 +88,17 @@ async function gtPools(path: string): Promise<{ data: any[]; toks: Record<string
   return { data: j.data ?? [], toks }
 }
 
+// Chain-wide token search (name / symbol / address) so ANY RH token is reachable,
+// not just what's on the board — GeckoTerminal's search covers every indexed pool.
+async function gtSearch(q: string): Promise<{ data: any[]; toks: Record<string, any> }> {
+  const res = await fetch(`${GT_BASE}/search/pools?query=${encodeURIComponent(q)}&network=robinhood&include=base_token,dex`, { headers: HEADERS, signal: AbortSignal.timeout(8000) })
+  if (!res.ok) throw new Error(`geckoterminal ${res.status}`)
+  const j = (await res.json()) as any
+  const toks: Record<string, any> = {}
+  for (const i of j.included ?? []) if (i.type === 'token') toks[i.id] = i.attributes
+  return { data: j.data ?? [], toks }
+}
+
 const FRESH_MS = 45_000 // refetch GeckoTerminal at most this often per feed
 const STALE_MS = 600_000 // serve last-good up to 10 min on upstream failure
 
@@ -94,13 +106,16 @@ export const onRequestGet: PagesFunction = async (ctx) => {
   const { request } = ctx
   const url = new URL(request.url)
   const feed = url.searchParams.get('feed') ?? 'trending'
+  const q = (url.searchParams.get('q') ?? '').trim()
   const inc = 'include=base_token,dex'
+  if (feed === 'search' && !q) return json({ feed, count: 0, tokens: [] })
 
   // Cache-through with serve-stale: GeckoTerminal 429s from Cloudflare's shared
   // egress IPs, so we refetch at most every FRESH_MS and, if that fetch fails,
   // return the last-good copy (kept STALE_MS) so the board never goes blank.
   const cache = (caches as unknown as { default: Cache }).default
-  const key = new Request(`https://trenches.cache/${feed}`, { method: 'GET' })
+  const cacheId = feed === 'search' ? `search:${q.toLowerCase()}` : feed
+  const key = new Request(`https://trenches.cache/${cacheId}`, { method: 'GET' })
   const cached = await cache.match(key)
   if (cached) {
     const at = Number(cached.headers.get('x-fetched-at') || 0)
@@ -109,7 +124,16 @@ export const onRequestGet: PagesFunction = async (ctx) => {
 
   try {
     let cards: Card[]
-    if (feed === 'new') {
+    if (feed === 'search') {
+      const { data, toks } = await gtSearch(q)
+      const byTok = new Map<string, Card>()
+      for (const c of data.map((p) => mapPool(p, toks)).filter((c): c is Card => !!c)) {
+        const k = c.address.toLowerCase()
+        const cur = byTok.get(k)
+        if (!cur || c.liqUsd > cur.liqUsd) byTok.set(k, c) // deepest pool per token
+      }
+      cards = [...byTok.values()].sort((a, b) => b.liqUsd - a.liqUsd) // no dust filter — the user asked for it
+    } else if (feed === 'new') {
       const { data, toks } = await gtPools(`new_pools?${inc}&page=1`)
       cards = data.map((p) => mapPool(p, toks)).filter((c): c is Card => !!c).sort((a, b) => b.createdTs - a.createdTs)
     } else {

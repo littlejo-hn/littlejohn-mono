@@ -72,7 +72,7 @@ export function App() {
   return (
     <div className="app">
       <Toaster theme="dark" position="bottom-right" richColors toastOptions={{ style: { fontFamily: 'var(--sans)' } }} />
-      <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} onSelect={(addr) => { navigate(`/coin/${addr}`); setSearchOpen(false) }} />
+      <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} onSelect={(addr) => { navigate(`/?token=${addr}`); setSearchOpen(false) }} />
       <aside className={`sidebar ${menuOpen ? 'open' : ''}`}>
         <NavLink to="/" className="brand" aria-label="LittleJohn home" onClick={() => setMenuOpen(false)}>
           <span className="diamond" />
